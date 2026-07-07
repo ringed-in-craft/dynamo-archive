@@ -2,7 +2,7 @@ FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm@sha256:01f42367a0a9
 
 RUN pip install --no-cache-dir pytest==8.4.1 pytest-json-ctrf==0.3.5
 
-COPY access.log /app/access.log
+COPY data/access.log /app/access.log
 
 RUN mkdir -p /app
 
