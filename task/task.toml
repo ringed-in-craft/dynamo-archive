@@ -1,38 +1,35 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/output/report.csv", "/app/output/generate_report.py"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/reporting-pipeline-fix"
+description = "Fix grain bugs, a missing filter, and a query-plan anti-pattern in a monthly financial reporting pipeline"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "Data Querying and Databases"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Query optimization"                   # diversity subcategory, assigned by the Dynamo team
+# --- Pre-seeded — DO NOT EDIT ---
+category = "Data Querying and Databases"
+subcategory = "Query optimization"
 # --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
 # --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+task_objective = ["fix", "optimize"]
+artifact_type = ["single_script_or_program", "generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = """The agent inherits a Python reporting pipeline that produces silently wrong financial output. Three independent bugs span different SQL query classes: a grain fan-out (JOIN multiplying per-order discounts across line items), a mixed-grain aggregation (shipping summed at line-item instead of order level), and a logical filter error (cancelled/refunded orders included in revenue). A fourth issue is a query-performance anti-pattern with a missing index. Each fix brings the output closer to correct but never all the way — the agent sees partial improvement and must actively re-verify. The bugs interact: fixing the discount fan-out makes shipping discrepancies more visible, and fixing both grain bugs reveals the filter issue. The missing index requires EXPLAIN QUERY PLAN analysis, a genuine query optimization skill. Roughly 40% of orders have multiple items, 5% have NULL foreign keys, 3% have zero items, and the held-out DB increases excluded-status orders from 5% to 15%. A senior analytics engineer would need 2-4 focused hours."""
+solution_explanation = """Fix 1: Pre-aggregate order-level discounts (discount_pct * subtotal) in a CTE/subquery before joining with order_items, so each order's discount contributes once regardless of line-item count. Fix 2: Pre-aggregate shipping costs per order in a subquery before combining with line-item data. Fix 3: Add WHERE order_status IN ('completed', 'pending') to filter excluded orders; NULL status defaults to excluded. Fix 4: Create a composite index on (order_date, customer_id) to eliminate the table scan — verify with EXPLAIN QUERY PLAN. The key insight is that each fix produces partial improvement that looks convincing, so the agent must iteratively re-verify after each change rather than stopping at 'close enough.'"""
+verification_explanation = """The verifier replaces the sample database with a held-out version (same schema, different seed, production-scale with ~15% excluded orders) and runs the agent's fixed script. It checks: (1) script exits 0 and produces /app/output/report.csv, (2) the CSV matches the golden reference exactly — float values to 2 decimal places, cell-by-cell, with columns [year, quarter, total_orders, total_revenue, total_discount, total_shipping], (3) EXPLAIN QUERY PLAN on the orders table shows USING INDEX and does not show SCAN orders. Edge cases: NULL-FK orders report 0.00 for discount/shipping. Zero-item orders count toward total_orders but contribute 0 revenue. The verifier copies golden data to a tmp_path before comparison."""
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 600.0
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
