@@ -1,49 +1,87 @@
 #!/usr/bin/env python3
 """Sensor log decoder — reads .slog binary files and outputs JSON."""
 
-import struct, json, os
+import struct, json, os, io
+from typing import Any
 
 INPUT_PATH = "/app/data/sample.slog"
 OUTPUT_DIR = "/app/output"
 OUTPUT_PATH = os.path.join(OUTPUT_DIR, "decoded.json")
 
+MAGIC_EXPECTED = b"SLOG"
+RECORD_STRUCT = "<BBf"
+RECORD_SIZE = struct.calcsize(RECORD_STRUCT)
+HEADER_STRUCT = "<I"
+HEADER_SIZE = struct.calcsize(HEADER_STRUCT)
 
-def decode_slog(path):
-    with open(path, "rb") as f:
-        magic = f.read(4)
-        if magic != b"SLOG":
-            raise ValueError("Invalid magic bytes")
-        block_size = struct.unpack("<H", f.read(2))[0]
-        records = []
-        record_counter = 0
-        current_base = None
+
+def _validate_magic(fh: io.BufferedReader) -> int:
+    magic = fh.read(4)
+    if magic != MAGIC_EXPECTED:
+        raise ValueError(f"Bad magic: {magic!r}")
+    raw = fh.read(2)
+    return struct.unpack("<H", raw)[0]
+
+
+def _parse_record(raw: bytes) -> dict[str, Any]:
+    fields = struct.unpack(RECORD_STRUCT, raw)
+    return {
+        "offset": fields[0],
+        "sensor_id": fields[1],
+        "value": round(fields[2], 6),
+    }
+
+
+def _read_block_header(fh: io.BufferedReader) -> int:
+    raw = fh.read(HEADER_SIZE)
+    if not raw or len(raw) < HEADER_SIZE:
+        return None
+    return struct.unpack(HEADER_STRUCT, raw)[0]
+
+
+def _compute_timestamp(base: int, counter: int, offset: int) -> int:
+    return base + counter
+
+
+def decode_slog(path: str) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    global_counter = 0
+    block_base = None
+
+    with open(path, "rb") as fh:
+        block_size = _validate_magic(fh)
+
         while True:
-            header = f.read(4)
-            if not header:
+            hdr_val = _read_block_header(fh)
+            if hdr_val is None:
                 break
-            if current_base is None:
-                current_base = struct.unpack("<I", header)[0]
+
+            if block_base is None:
+                block_base = hdr_val
+
             for _ in range(block_size):
-                rec = f.read(6)
-                if not rec or len(rec) < 6:
+                chunk = fh.read(RECORD_SIZE)
+                if not chunk or len(chunk) < RECORD_SIZE:
                     break
-                offset, sensor_id, value = struct.unpack("<BBf", rec)
-                timestamp = current_base + record_counter
+
+                parsed = _parse_record(chunk)
+                ts = _compute_timestamp(block_base, global_counter, parsed["offset"])
                 records.append({
-                    "timestamp": timestamp,
-                    "sensor_id": sensor_id,
-                    "value": round(value, 6),
+                    "timestamp": ts,
+                    "sensor_id": parsed["sensor_id"],
+                    "value": parsed["value"],
                 })
-                record_counter += 1
-        return records
+                global_counter += 1
+
+    return records
 
 
-def main():
+def main() -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    records = decode_slog(INPUT_PATH)
-    with open(OUTPUT_PATH, "w") as f:
-        json.dump(records, f, indent=2)
-    print(f"Decoded {len(records)} records to {OUTPUT_PATH}")
+    result = decode_slog(INPUT_PATH)
+    with open(OUTPUT_PATH, "w") as fh:
+        json.dump(result, fh, indent=2)
+    print(f"Decoded {len(result)} records to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
