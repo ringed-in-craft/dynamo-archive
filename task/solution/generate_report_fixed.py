@@ -2,7 +2,7 @@
 """Quarterly financial report generator — FIXED.
 
 Reads from the SQLite database and writes a CSV report to /app/output/report.csv.
-All bugs fixed: pre-aggregation at correct grain, status filtering, and index creation.
+All bugs fixed: pre-aggregation at correct grain and status filtering.
 """
 
 import sqlite3
@@ -18,11 +18,6 @@ def generate_report():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_orders_date_cust "
-        "ON orders(order_date, customer_id)"
-    )
 
     rows = conn.execute("""
         SELECT

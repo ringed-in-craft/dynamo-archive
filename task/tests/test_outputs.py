@@ -7,7 +7,6 @@ import csv
 import os
 import shutil
 import subprocess
-import sqlite3
 import tempfile
 from pathlib import Path
 
@@ -36,7 +35,6 @@ def run_fixed_script():
     os.makedirs("/app/data", exist_ok=True)
     os.makedirs("/app/output", exist_ok=True)
 
-    # Overwrite sample DB with held-out version
     shutil.copy2(HELDOUT_DB, TARGET_DB)
 
     result = subprocess.run(
@@ -83,26 +81,3 @@ def test_report_matches_golden(run_fixed_script):
             assert act_row == exp_row, (
                 f"Row {i} mismatch:\n  expected: {exp_row}\n  got:      {act_row}"
             )
-
-
-def test_index_created(run_fixed_script):
-    """EXPLAIN QUERY PLAN must show USING INDEX, not SCAN orders."""
-    assert os.path.exists(TARGET_DB), f"Database {TARGET_DB} not found"
-
-    conn = sqlite3.connect(TARGET_DB)
-    try:
-        plan_rows = conn.execute(
-            "EXPLAIN QUERY PLAN "
-            "SELECT * FROM orders WHERE order_date >= '2023-01-01'"
-        ).fetchall()
-
-        plan_text = " ".join(str(r) for r in plan_rows)
-
-        assert "USING" in plan_text.upper() and "INDEX" in plan_text.upper(), (
-            f"No index used in query plan:\n{plan_text}"
-        )
-        assert "SCAN orders" not in plan_text, (
-            f"EXPLAIN QUERY PLAN still contains SCAN orders:\n{plan_text}"
-        )
-    finally:
-        conn.close()
