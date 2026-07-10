@@ -2,6 +2,7 @@ artifacts = ["/app/output/decoded.json", "/app/output/sensorlog"]
 
 [task]
 name = "dynamo/sensorlog-decoder-fix"
+description = "Fix a binary sensor log decoder"
 
 [metadata]
 category = "Security"
