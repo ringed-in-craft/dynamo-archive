@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Quarterly financial report generator — FIXED.
-
-Reads from the SQLite database and writes a CSV report to /app/output/report.csv.
-All bugs fixed: pre-aggregation at correct grain and status filtering.
-"""
+"""Quarterly financial report generator — FIXED."""
 
 import sqlite3
 import csv
@@ -24,10 +20,13 @@ def generate_report():
             CAST(strftime('%Y', o.order_date) AS INTEGER) as year,
             ((CAST(strftime('%m', o.order_date) AS INTEGER) - 1) / 3) + 1 as quarter,
             COUNT(DISTINCT o.order_id) as total_orders,
-            ROUND(SUM(COALESCE(item_revenue.total, 0)), 2) as total_revenue,
+            ROUND(SUM(COALESCE(item_revenue.total, 0)), 2) as revenue_val,
             ROUND(SUM(CASE WHEN o.order_status IN ('completed', 'pending')
-                       THEN o.discount_pct * o.subtotal ELSE 0 END), 2) as total_discount,
-            ROUND(SUM(COALESCE(order_shipping.cost, 0)), 2) as total_shipping
+                       AND item_revenue.order_id IS NOT NULL
+                       THEN o.discount_pct * o.subtotal ELSE 0 END), 2) as discount_val,
+            ROUND(SUM(CASE WHEN o.order_status IN ('completed', 'pending')
+                       AND item_revenue.order_id IS NOT NULL
+                       THEN COALESCE(order_shipping.cost, 0) ELSE 0 END), 2) as shipping_val
         FROM orders o
         LEFT JOIN (
             SELECT order_id, SUM(quantity * unit_price) as total
@@ -51,9 +50,9 @@ def generate_report():
             writer.writerow([
                 row["year"], row["quarter"],
                 row["total_orders"],
-                row["total_revenue"],
-                row["total_discount"],
-                row["total_shipping"],
+                f"{row['revenue_val']:.2f}",
+                f"{row['discount_val']:.2f}",
+                f"{row['shipping_val']:.2f}",
             ])
 
     conn.close()
