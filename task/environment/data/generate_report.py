@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""Quarterly financial report generator.
-
-Reads from the SQLite database and writes a CSV report to /app/output/report.csv.
-"""
+"""Quarterly financial report generator."""
 
 import sqlite3
 import csv
@@ -54,7 +51,6 @@ def generate_report():
         writer = csv.writer(f)
         writer.writerow(["year", "quarter", "total_orders", "total_revenue",
                          "total_discount", "total_shipping"])
-
         for row in discount_rows:
             yr, qtr = row["year"], row["quarter"]
             shipping = shipping_map.get((yr, qtr), 0.0)

@@ -6,7 +6,7 @@ orders: order_id, customer_id, order_date, order_status, discount_pct, subtotal
 order_items: item_id, order_id, product_id, quantity, unit_price
 shipping: shipment_id, order_id, shipping_cost, shipped_date
 
-order_status has exactly four values: 'completed', 'pending', 'cancelled', 'refunded'. Revenue, discounts, shipping, and total_orders must include only orders with status 'completed' or 'pending'. NULL order_status must be excluded. NULL customer_id (foreign key) is possible and those orders are valid. Some orders have zero order_items rows — they count toward total_orders but contribute 0 revenue, 0 discount, 0 shipping.
+order_status has exactly four values: 'completed', 'pending', 'cancelled', 'refunded'. Revenue, discounts, shipping, and total_orders must include only orders with status 'completed' or 'pending'. NULL order_status must be excluded. NULL customer_id (foreign key) is possible and those orders are valid. Some orders have zero order_items rows — they count toward total_orders but contribute 0 revenue, 0 discount, 0 shipping. Some orders may not have a corresponding shipping record — those orders should still appear in the report with 0 shipping.
 
 The report.csv must have these columns in this order: year, quarter, total_orders, total_revenue, total_discount, total_shipping. Float values must be rounded to 2 decimal places. Year and quarter are integers derived from order_date. Quarter 1 = Jan-Mar, 2 = Apr-Jun, 3 = Jul-Sep, 4 = Oct-Dec.
 
