@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Quarterly financial report generator."""
 
-import sqlite3
-import csv
-import os
+import sqlite3, csv, os
 
 DB_PATH = "/app/data/sample_db.sqlite"
 OUTPUT_DIR = "/app/output"
@@ -24,6 +22,7 @@ def generate_report():
             SUM(o.discount_pct * o.subtotal) as discount_total
         FROM orders o
         LEFT JOIN order_items oi ON o.order_id = oi.order_id
+        WHERE o.order_status IN ('completed', 'pending')
         GROUP BY year, quarter
     """
 
@@ -35,7 +34,7 @@ def generate_report():
         FROM orders o
         JOIN order_items oi ON o.order_id = oi.order_id
         JOIN shipping s ON o.order_id = s.order_id
-        WHERE o.order_date >= '2023-01-01'
+        WHERE o.order_status IN ('completed', 'pending')
         GROUP BY year, quarter
     """
 
@@ -55,8 +54,7 @@ def generate_report():
             yr, qtr = row["year"], row["quarter"]
             shipping = shipping_map.get((yr, qtr), 0.0)
             writer.writerow([
-                yr, qtr,
-                row["order_count"],
+                yr, qtr, row["order_count"],
                 round(row["revenue"], 2),
                 round(row["discount_total"], 2),
                 round(shipping, 2),

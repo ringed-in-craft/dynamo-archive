@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-"""Quarterly financial report generator — FIXED."""
+"""Quarterly financial report generator — implements REPORT_SPEC.md."""
 
-import sqlite3
-import csv
-import os
+import sqlite3, csv, os
 
 DB_PATH = "/app/data/sample_db.sqlite"
 OUTPUT_DIR = "/app/output"
@@ -23,23 +21,17 @@ def generate_report():
             ROUND(SUM(COALESCE(item_revenue.total, 0)), 2) as revenue_val,
             ROUND(SUM(CASE WHEN o.order_status IN ('completed', 'pending')
                        AND item_revenue.order_id IS NOT NULL
-                       THEN o.discount_pct * o.subtotal ELSE 0 END), 2) as discount_val,
+                       THEN MIN(o.discount_pct, 0.20) * o.subtotal ELSE 0 END), 2) as discount_val,
             ROUND(SUM(CASE WHEN o.order_status IN ('completed', 'pending')
                        AND item_revenue.order_id IS NOT NULL
                        THEN COALESCE(order_shipping.cost, 0) ELSE 0 END), 2) as shipping_val
         FROM orders o
-        LEFT JOIN (
-            SELECT order_id, SUM(quantity * unit_price) as total
-            FROM order_items
-            GROUP BY order_id
+        LEFT JOIN (SELECT order_id, SUM(quantity*unit_price) as total FROM order_items GROUP BY order_id
         ) item_revenue ON o.order_id = item_revenue.order_id
-        LEFT JOIN (
-            SELECT order_id, shipping_cost as cost
-            FROM shipping
+        LEFT JOIN (SELECT order_id, shipping_cost as cost FROM shipping
         ) order_shipping ON o.order_id = order_shipping.order_id
         WHERE o.order_status IN ('completed', 'pending')
-        GROUP BY year, quarter
-        ORDER BY year, quarter
+        GROUP BY year, quarter ORDER BY year, quarter
     """).fetchall()
 
     with open(OUTPUT_PATH, "w", newline="") as f:
@@ -48,13 +40,10 @@ def generate_report():
                          "total_discount", "total_shipping"])
         for row in rows:
             writer.writerow([
-                row["year"], row["quarter"],
-                row["total_orders"],
-                f"{row['revenue_val']:.2f}",
-                f"{row['discount_val']:.2f}",
+                row["year"], row["quarter"], row["total_orders"],
+                f"{row['revenue_val']:.2f}", f"{row['discount_val']:.2f}",
                 f"{row['shipping_val']:.2f}",
             ])
-
     conn.close()
     print("Report written to", OUTPUT_PATH)
 
