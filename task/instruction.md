@@ -1,17 +1,17 @@
-<!--
-  This file is the PROMPT handed verbatim to the model that will attempt your task.
-  Replace everything in this comment with your task instruction, then delete the comment.
+The file /app/data/sensorlog is a Python 3 script that reads a binary sensor log file at /app/data/sample.slog and writes decoded output to /app/output/decoded.json. The script runs without errors and produces output that looks correct — but its timestamps are computed incorrectly.
 
-  Guidelines:
-  - Write it yourself, as a domain expert. Do NOT generate it with an LLM.
-  - It's a prompt, not a document — no title, no section headers, no excessive Markdown.
-  - Write it the way you'd brief a skilled colleague.
-  - Use absolute paths (e.g. /app/output.txt), never relative paths.
-  - Be explicit about every expected output file and its exact format/schema.
-  - Include everything the agent needs to solve the task — and nothing more (don't
-    hint at or reveal your solution).
-  - Keep it concise (<= 1500 tokens). State the goal and required outputs; skip
-    backstory, roleplay, and filler.
--->
+The .slog binary format:
 
-Replace this file with your task instruction.
+- 4-byte magic: "SLOG"
+- 2-byte block size (unsigned 16-bit little-endian, always 256)
+- Then one or more blocks. Each block:
+  - 4-byte base timestamp (unsigned 32-bit little-endian, Unix seconds)
+  - Exactly block_size records. Each record: 1-byte relative offset (unsigned 8-bit) + 1-byte sensor ID (unsigned 8-bit) + 4-byte value (32-bit float, little-endian)
+
+The absolute timestamp of a record is: block_base_timestamp + relative_offset.
+
+The sample file /app/data/sample.slog contains 4 blocks (1,024 records) with contiguous, monotonic timestamps. The script produces correct timestamps on this file. The verifier will run your submitted script against a different .slog file where blocks are not contiguous and not monotonic.
+
+Fix /app/data/sensorlog so that it correctly decodes any valid .slog file. Copy your fixed version to /app/output/sensorlog. The verifier will run this copy against a held-out file to verify your fix is general. Run your fixed script to produce /app/output/decoded.json — both files are graded.
+
+Do not modify the .slog files. Do not create new Python scripts or data files; work within the existing script.

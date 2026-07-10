@@ -1,38 +1,32 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/output/decoded.json", "/app/output/sensorlog"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/sensorlog-decoder-fix"
+description = "Fix a binary sensor log decoder that miscalculates timestamps across non-contiguous blocks"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "Security"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Reverse Engineering"                   # diversity subcategory, assigned by the Dynamo team
-# --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
-# --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+category = "Security"
+subcategory = "Reverse Engineering"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["fix", "debug", "analyze"]
+artifact_type = ["single_script_or_program", "text_or_log_file", "generated_output_artifact"]
+expert_time_estimate_hours = 2
+difficulty_explanation = """The agent is given a Python script that decodes a custom binary log format into JSON. The script produces correct output on the provided sample file, so the agent has no visible failure signal. The bug: the script reads the first block's base timestamp once, then increments a running counter for every subsequent record, ignoring the per-block base timestamps embedded in the file. On the sample data (4 contiguous, monotonic blocks), this running counter produces correct timestamps. On the held-out data (blocks with temporal gaps and an out-of-order block), the counter diverges — timestamps are off by thousands to millions of seconds. Diagnosing this requires reverse-engineering the binary format: inspecting raw bytes with struct/hexdump, identifying the block structure, recognizing that each 256-record block begins with a 4-byte base timestamp, and understanding the relationship between block base and per-record relative offset. The agent cannot discover the bug by comparing output against a reference because the sample output is correct. A senior reverse engineer would need 2-3 hours to analyze the format, identify the timestamp mechanism, and fix the stateful counter."""
+solution_explanation = """Read the per-block base timestamp from each block header (4 bytes, uint32 LE) using struct.unpack. For each record, compute the absolute timestamp as base_timestamp + offset (where offset is the first byte of the 6-byte record). Remove the stateful record_counter variable and the conditional that only reads the base on the first block."""
+verification_explanation = """The verifier replaces sample.slog with a held-out version (4 blocks, same format, but with temporal gaps between blocks and one out-of-order block) and runs the agent's fixed /app/output/sensorlog. It checks: (1) exactly 1,024 records produced, (2) every record's timestamp matches the golden reference exactly. The held-out file has blocks at base timestamps 1000000000, 1000005000 (gap of 4744s), 999900000 (out-of-order, earlier), and 1000010000. The buggy running-counter would produce timestamps off by 4744s for block 1, over 100 million seconds for block 2, and thousands for block 3."""
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 600.0
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
