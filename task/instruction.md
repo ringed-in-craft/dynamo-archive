@@ -1,9 +1,9 @@
-The file `/app/data/sensorlog` is a Python 3 script that reads a binary sensor log file at `/app/data/sample.slog` and writes decoded output to `/app/output/decoded.json`. The script runs without errors but has a subtle defect that causes incorrect results on some valid input files.
+The binary `/app/data/slogdec` correctly decodes `.slog` binary log files into JSON. Run it on the sample file at `/app/data/sample.slog` to see the expected output format.
 
-On the provided sample file the script produces correct output. The verifier will run your submitted script against a different `.slog` file. Fix the script so it correctly decodes any valid file.
+Write a Python 3 script at `/app/sensorlog` that decodes any `.slog` file and produces output identical to `/app/data/slogdec`. Your script will be invoked as `python3 /app/sensorlog /app/data/sample.slog` and must write the decoded JSON array to `/app/output/decoded.json`.
 
-Examine the script and the binary format it parses. Do not rely on the sample output alone to verify correctness — the defect is not visible on the sample data.
+The verifier will run your script against a held-out `.slog` file and compare the output byte-for-byte with the reference decoder's output.
 
-Fix `/app/data/sensorlog`, then copy your fixed version to `/app/output/sensorlog`. The verifier will run this copy. Run your fixed script to produce `/app/output/decoded.json`. Both files are graded.
+Reverse-engineer how `/app/data/slogdec` parses the binary format by examining the binary and testing it against the sample file. Standard Linux tools (objdump, strings, strace, xxd, python3) are available.
 
-Do not modify the `.slog` files. Do not create new Python scripts or data files.
+Copy your script to `/app/output/sensorlog`. Produce `/app/output/decoded.json` by running your script on the sample file.

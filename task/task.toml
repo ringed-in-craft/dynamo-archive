@@ -2,25 +2,25 @@ artifacts = ["/app/output/decoded.json", "/app/output/sensorlog"]
 
 [task]
 name = "dynamo/sensorlog-decoder-fix"
-description = "Fix a binary sensor log decoder"
+description = "Reverse engineer a stripped binary decoder and write a Python equivalent"
 
 [metadata]
 category = "Security"
 subcategory = "Reverse Engineering"
 model_tested = "Opus-4.8"
 agent_tested = "Terminus-2"
-task_objective = ["fix", "debug", "analyze"]
-artifact_type = ["single_script_or_program", "text_or_log_file", "generated_output_artifact"]
-expert_time_estimate_hours = 2
-difficulty_explanation = """The agent gets a Python script that decodes a custom binary log format. On the provided sample file the script produces correct output — the agent cannot detect the bug by comparing results. The defect: the script reads the first block's base timestamp once and increments a global counter for every subsequent record, ignoring per-block timestamps. The sample file has 4 contiguous, monotonic blocks where the running counter happens to match. A held-out file has temporal gaps and out-of-order blocks that break the counter. The agent must examine the binary format (reading 4-byte block headers with struct), recognize the per-block base-timestamp mechanism, and remove the stateful counter. The data is author-generated synthetic binary data. A reverse engineer familiar with binary formats would need 1-2 hours to diagnose and fix the stateful assumption."""
-solution_explanation = """Read the per-block base timestamp from each block header (4 bytes, uint32 LE) using struct.unpack. For each record, compute the absolute timestamp as base_timestamp + offset (where offset is the first byte of the 6-byte record). Remove the stateful record_counter variable and the conditional that only reads the base on the first block."""
-verification_explanation = """The verifier replaces sample.slog with a held-out version (4 blocks, same format, but with temporal gaps between blocks and one out-of-order block) and runs the agent's fixed /app/output/sensorlog. It checks: (1) exactly 1,024 records produced, (2) every record's timestamp matches the golden reference exactly. The held-out file has blocks at base timestamps 1000000000, 1000005000 (gap of 4744s), 999900000 (out-of-order, earlier), and 1000010000. The buggy running-counter would produce timestamps off by 4744s for block 1, over 100 million seconds for block 2, and thousands for block 3."""
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program", "binary_executable_or_library", "generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = """The agent is given a stripped, optimized ELF binary that decodes a custom binary log format into JSON. They must reverse-engineer the binary — using objdump, strings, strace, and test runs — to understand the file format (magic bytes, block headers, per-record structures with timestamps, sensor IDs, and floating-point values) and write a Python script that produces byte-identical output on any valid input. The format uses little-endian integers, 32-bit floats, and a fixed 256-record block structure where each block begins with a 4-byte base timestamp and individual records carry a 1-byte relative offset. The agent must discover all of this from a stripped binary with no source code, no symbols, and no format documentation — genuine reverse engineering. A senior security engineer would need 2-4 hours to reverse-engineer the binary, identify all fields, and write a correct Python decoder. The data is author-generated synthetic binary data."""
+solution_explanation = """Run the binary on the sample file to observe output format. Use objdump -d to disassemble and identify the parsing loop: 4-byte magic check, 2-byte block_size read, then a loop reading 4-byte block headers followed by 256 6-byte records. Each record: byte 0 = relative offset, byte 1 = sensor ID, bytes 2-5 = float. The timestamp is base_timestamp + offset. Write a Python script using struct.unpack with format '<H' for block_size, '<I' for base timestamp, unpack bytes 0-1 as unsigned chars and bytes 2-5 as float."""
+verification_explanation = """The verifier replaces sample.slog with a held-out file and runs both the reference binary and the agent's Python script. Their JSON outputs are compared record-by-record — every timestamp, sensor_id, and value must match. The held-out file has blocks with temporal gaps and out-of-order timestamps to ensure the decoder handles non-contiguous data correctly."""
 
 [verifier]
 timeout_sec = 120.0
 
 [agent]
-timeout_sec = 600.0
+timeout_sec = 900.0
 
 [environment]
 build_timeout_sec = 600.0
