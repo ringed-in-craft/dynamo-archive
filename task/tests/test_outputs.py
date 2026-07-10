@@ -19,6 +19,11 @@ def run_agent():
     os.makedirs("/app/data", exist_ok=True)
     os.makedirs("/app/output", exist_ok=True)
     shutil.copy2(HELDOUT_SLOG, "/app/data/sample.slog")
+
+    # Remove reference binary so agent cannot subprocess it
+    if os.path.exists("/app/data/slogdec"):
+        os.remove("/app/data/slogdec")
+
     return subprocess.run(["python3", AGENT_SCRIPT, "/app/data/sample.slog"],
                           capture_output=True, text=True, timeout=30)
 
