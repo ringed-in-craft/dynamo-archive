@@ -2,7 +2,7 @@ artifacts = ["/app/output/report.csv", "/app/output/generate_report.py"]
 
 [task]
 name = "dynamo/reporting-pipeline-fix"
-description = "Fix grain bugs, a missing filter, and a query-plan anti-pattern in a monthly financial reporting pipeline"
+description = "Fix grain bugs, a missing filter, and a query-plan anti-pattern in a quarterly financial reporting pipeline"
 
 [metadata]
 # --- Pre-seeded — DO NOT EDIT ---

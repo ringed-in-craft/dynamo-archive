@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Monthly financial report generator.
+"""Quarterly financial report generator.
 
 Reads from the SQLite database and writes a CSV report to /app/output/report.csv.
 """
@@ -18,9 +18,6 @@ def generate_report():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
-    # --- BUG 1: Discount fan-out ---
-    # The LEFT JOIN to order_items multiplies order-level discount rows.
-    # discount_pct * subtotal is per-order, but JOIN fans it out per line item.
     discount_query = """
         SELECT
             CAST(strftime('%Y', o.order_date) AS INTEGER) as year,
@@ -33,10 +30,6 @@ def generate_report():
         GROUP BY year, quarter
     """
 
-    # --- BUG 4: Performance anti-pattern ---
-    # This query uses a correlated subquery that causes repeated inner scans.
-    # EXPLAIN QUERY PLAN will reveal SCAN orders without a proper index.
-    # Fix: rewrite to a JOIN + derived table, and create an index.
     shipping_query = """
         SELECT
             CAST(strftime('%Y', o.order_date) AS INTEGER) as year,
@@ -52,18 +45,10 @@ def generate_report():
     discount_rows = conn.execute(discount_query).fetchall()
     shipping_rows = conn.execute(shipping_query).fetchall()
 
-    # Index shipping rows by (year, quarter)
     shipping_map = {}
     for row in shipping_rows:
         key = (row["year"], row["quarter"])
-        # --- BUG 2: Shipping summed at line-item grain ---
-        # shipping_cost is per-order but grouped with order_items join
-        # causing duplication. Stored as-is (buggy).
         shipping_map[key] = row["shipping_total"]
-
-    # --- BUG 3: No status filter ---
-    # The discount query doesn't filter out cancelled/refunded orders.
-    # Fix: add WHERE o.order_status IN ('completed', 'pending')
 
     with open(OUTPUT_PATH, "w", newline="") as f:
         writer = csv.writer(f)

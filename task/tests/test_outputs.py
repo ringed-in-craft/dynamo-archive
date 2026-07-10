@@ -67,7 +67,7 @@ def test_report_exists():
     assert Path(AGENT_OUTPUT).exists(), f"{AGENT_OUTPUT} not found"
 
 
-def test_report_matches_golden():
+def test_report_matches_golden(run_fixed_script):
     """The report CSV must exactly match the golden reference."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_expected = os.path.join(tmpdir, "expected.csv")
