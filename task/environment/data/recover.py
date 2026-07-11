@@ -2,8 +2,8 @@
 """CHNK archive recovery tool — recovers files from corrupted chunked archives.
 
 Reads the CHNK format: each chunk stores two copies (A and B). At least one
-copy is intact. The tool validates copies against stored checksums to select
-the correct data and reassemble files.
+copy is intact. The tool validates copies against stored integrity markers to
+select the correct data and reassemble files.
 """
 import struct, sys, os, zlib
 
@@ -37,14 +37,13 @@ def extract(archive_path: str, outdir: str):
         pos += 2
 
         file_content = bytearray()
-        chunks_ok = True
 
         for _ in range(chunk_count):
             chunk_idx = struct.unpack_from("<H", data, pos)[0]
             pos += 2
-            data_size = struct.unpack_from(">I", data, pos)[0]  # BUG: reads big-endian, spec says LE
+            data_size = struct.unpack_from(">I", data, pos)[0]  # BUG: big-endian, spec says LE
             pos += 4
-            stored_cksum = struct.unpack_from("<I", data, pos)[0]
+            stored_marker = struct.unpack_from("<I", data, pos)[0]
             pos += 4
 
             copy_a = data[pos:pos + data_size]
@@ -52,24 +51,22 @@ def extract(archive_path: str, outdir: str):
             copy_b = data[pos:pos + data_size]
             pos += data_size
 
-            # Select valid copy using checksum
-            cksum_a = zlib.crc32(copy_a) & 0xFFFFFFFF
-            cksum_b = zlib.crc32(copy_b) & 0xFFFFFFFF
+            # Validate copies using integrity marker
+            marker_a = zlib.crc32(copy_a) & 0xFFFFFFFF
+            marker_b = zlib.crc32(copy_b) & 0xFFFFFFFF
 
-            if cksum_a == stored_cksum:
+            if marker_a == stored_marker:
                 file_content.extend(copy_a)
-            elif cksum_b == stored_cksum:
+            elif marker_b == stored_marker:
                 file_content.extend(copy_b)
             else:
                 # Fallback: neither matches, pick Copy A
                 file_content.extend(copy_a)
-                chunks_ok = False
 
         outpath = os.path.join(outdir, filename)
         with open(outpath, "wb") as f:
             f.write(bytes(file_content))
-        status = "OK" if chunks_ok else "RECOVERED"
-        print(f"Extracted: {filename} ({len(file_content)} bytes) [{status}]")
+        print(f"Extracted: {filename} ({len(file_content)} bytes)")
 
 
 if __name__ == "__main__":

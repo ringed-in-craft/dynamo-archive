@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 """CHNK archive recovery tool — FIXED.
 
-Correctly parses the format, uses the custom prime-weighted checksum to
-validate chunk copies, and reassembles files from intact data.
+Correctly parses the format and uses the proprietary integrity marker algorithm
+to validate chunk copies and reassemble files from intact data.
 """
 import struct, sys, os
 
 ARCHIVE = "/app/data/archive.bin"
 OUTDIR = "/app/output"
 
-# Prime-weighted checksum — weights cycle every 8 bytes
-_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19]
 
-
-def custom_checksum(data: bytes) -> int:
-    result = 0x9E3779B9
-    for i, b in enumerate(data):
-        result = (result + b * _PRIMES[i % 8]) & 0xFFFFFFFF
-    return result
+def integrity_marker(data: bytes) -> int:
+    """Proprietary non-linear mixing function — NOT any standard checksum."""
+    a = 0x9E3779B9
+    b = 0x7F4A7C15
+    for i, byte in enumerate(data):
+        a = (a + byte) & 0xFFFFFFFF
+        a = (a ^ (a >> 13)) & 0xFFFFFFFF
+        a = (a * 0x41C64E6D + 0x6073) & 0xFFFFFFFF
+        b = (b ^ byte) & 0xFFFFFFFF
+        b = ((b << 7) | (b >> 25)) & 0xFFFFFFFF
+        b = (b + a) & 0xFFFFFFFF
+    return (a ^ b ^ 0xA5A5A5A5) & 0xFFFFFFFF
 
 
 def extract(archive_path: str, outdir: str):
@@ -52,7 +56,7 @@ def extract(archive_path: str, outdir: str):
             pos += 2
             data_size = struct.unpack_from("<I", data, pos)[0]  # FIXED: little-endian
             pos += 4
-            stored_cksum = struct.unpack_from("<I", data, pos)[0]
+            stored_marker = struct.unpack_from("<I", data, pos)[0]
             pos += 4
 
             copy_a = data[pos:pos + data_size]
@@ -60,12 +64,12 @@ def extract(archive_path: str, outdir: str):
             copy_b = data[pos:pos + data_size]
             pos += data_size
 
-            cksum_a = custom_checksum(copy_a)
-            cksum_b = custom_checksum(copy_b)
+            marker_a = integrity_marker(copy_a)
+            marker_b = integrity_marker(copy_b)
 
-            if cksum_a == stored_cksum:
+            if marker_a == stored_marker:
                 file_content.extend(copy_a)
-            elif cksum_b == stored_cksum:
+            elif marker_b == stored_marker:
                 file_content.extend(copy_b)
             else:
                 file_content.extend(copy_a)
