@@ -1,4 +1,4 @@
-artifacts = ["/app/output/recover.py", "/app/output/readme.txt", "/app/output/notes.txt", "/app/output/data.csv"]
+artifacts = ["/app/output/recover.py"]
 
 [task]
 name = "dynamo/chnk-archive-recovery"

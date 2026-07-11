@@ -14,5 +14,3 @@ extracted files under `/app/output/`.
 Use only the Python 3 standard library. The custom checksum formula is NOT any standard algorithm
 (not CRC32, Adler-32, Fletcher, or similar) and cannot be looked up online — it must be
 reconstructed from the stored checksum values in the archive.
-
-You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
