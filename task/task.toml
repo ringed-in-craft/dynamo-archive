@@ -1,38 +1,32 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/output/payload.bin", "/app/output/reconstruct.py"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/tcp-stream-reconstruct"
+description = "Fix a pcap HTTP extractor to handle multi-connection demux, TCP wraparound, chunked encoding, and retransmission overlap"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "Security"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Network Forensics"                   # diversity subcategory, assigned by the Dynamo team
-# --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
-# --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+category = "Security"
+subcategory = "Network Forensics"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["fix", "analyze", "implement"]
+artifact_type = ["single_script_or_program", "generated_output_artifact"]
+expert_time_estimate_hours = 5
+difficulty_explanation = """The agent is given a pcap-to-HTTP extractor that works correctly on a single clean connection. The held-out capture contains three concurrent TCP connections to the same server — the agent must demultiplex by 4-tuple and identify the correct connection by HTTP request line. The target connection has three layered difficulties: (a) the initial sequence number is near 2^32, causing wraparound after a few KB that breaks naive sequence comparison; (b) the response uses HTTP chunked transfer-encoding requiring dechunking; (c) three retransmitted packets carry different bytes than the originals, requiring first-received-wins overlap resolution. All must be implemented from scratch using only Python stdlib — no tshark, scapy, or other network libraries. A senior network forensics analyst would need 5-8 hours. Data is author-generated synthetic pcap files."""
+solution_explanation = """Demux packets by (src_ip, src_port, dst_ip, dst_port). For each connection, reassemble TCP stream far enough to inspect the HTTP request line — identify the connection requesting /exports/quarterly-report.pdf. For the target connection: track the highest contiguous sequence number using unsigned 32-bit modular arithmetic with wraparound-aware comparison. On retransmission, check sequence overlap — keep first-received bytes, append only non-overlapping suffix. After reassembly, detect chunked encoding from the HTTP response headers and dechunk (parse hex length, skip CRLF, emit body). Write dechunked body to payload.bin."""
+verification_explanation = """The verifier replaces sample.pcap with the held-out version and runs the agent's fixed script. It checks the SHA-256 hash of /app/output/payload.bin against a pre-computed golden hash. The golden was computed from a correct implementation that demuxes by 4-tuple, selects the target connection by HTTP request line, handles wraparound, resolves overlap first-received-wins, and dechunks. The held-out pcap, golden hash, and expected payload live in tests/ only — the agent never sees them."""
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 900.0
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = false
+mcp_servers = []
