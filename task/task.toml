@@ -1,38 +1,32 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/output/recover.py", "/app/output/readme.txt", "/app/output/notes.txt", "/app/output/data.csv"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/chnk-archive-recovery"
+description = "Fix a CHNK archive recovery tool that parses a custom chunked format incorrectly and uses the wrong checksum algorithm to validate redundant chunk copies"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "File and Media Operations"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Recovery and repair"                   # diversity subcategory, assigned by the Dynamo team
-# --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
-# --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+category = "File and Media Operations"
+subcategory = "Recovery and repair"
+model_tested = "GPT-5.4"
+agent_tested = "Terminus-2"
+task_objective = ["fix", "recover_or_repair_artifact"]
+artifact_type = ["single_script_or_program", "archive_or_compressed_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = """The agent receives a partially-working chunked-archive recovery tool and the format specification. The tool has two defects: it reads data_size in big-endian order instead of the spec-mandated little-endian, and it validates chunk copies using Python's zlib.crc32 instead of the archive's custom prime-weighted checksum. On the sample archive, the endianness bug is subtle (small values differ visibly), and crc32 coincidentally selects the correct copies because the sample has copy A always correct and the buggy fallback picks A. The held-out archive has chunks where copy A is corrupted and copy B is correct — a tool still using the broken fallback selects corrupted data and produces wrong output. The custom checksum formula (prime-weighted rolling sum with seed) is not CRC32, Adler-32, Fletcher, or any standard algorithm; it cannot be looked up online and must be reconstructed mathematically from the stored checksum values and chunk data present in the sample archive. A senior systems engineer would need 3 hours to diagnose the endianness bug and reverse-engineer the checksum from known chunk data."""
+solution_explanation = """Fix 1: Change data_size parsing from big-endian (">I") to little-endian ("<I") as specified in FORMAT.md. Fix 2: Replace zlib.crc32 with the custom checksum formula. The checksum is recoverable because the sample archive provides chunk data bytes and their stored checksum values. The formula is sum(byte_i * prime[i mod 8]) + 0x9E3779B9 mod 2^32, where primes = [2,3,5,7,11,13,17,19]. With 8+ chunks of different lengths, the coefficients form a linear system solvable by Gaussian elimination over integers mod 2^32. An expert would recognize the linear structure (each chunk provides one equation per byte offset contributing to the same prime coefficient) and solve for the 8 unknowns."""
+verification_explanation = """The verifier replaces the sample archive with a held-out archive containing different files and chunk corruption patterns. In the held-out archive, several chunks have copy A corrupted and copy B correct — the exact inverse of the sample. The agent's fixed script must select copy B for those chunks (using the correct checksum) to produce byte-identical output. The verifier checks SHA-256 of each recovered file against a pre-computed golden reference stored only in tests/expected/. A tool still using crc32 or the copy-A fallback produces wrong bytes and fails SHA-256. A tool that disables validation entirely and hardcodes one copy also fails because neither copy-A-only nor copy-B-only is consistently correct. The checksum formula is genuinely load-bearing: only implementing the exact custom formula selects the correct copy for every chunk."""
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 900.0
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []

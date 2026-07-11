@@ -1,17 +1,18 @@
-<!--
-  This file is the PROMPT handed verbatim to the model that will attempt your task.
-  Replace everything in this comment with your task instruction, then delete the comment.
+The file `/app/data/recover.py` is a Python 3 script that recovers files from a corrupted chunked
+archive at `/app/data/archive.bin` using the CHNK format. The format specification is documented
+in `/app/data/FORMAT.md` — read it in full. Each file is split into chunks; each chunk stores two
+redundant copies. At least one copy per chunk is intact; the other may have a flipped bit. The
+script validates copies against stored checksums to select the correct data and reassembles files.
 
-  Guidelines:
-  - Write it yourself, as a domain expert. Do NOT generate it with an LLM.
-  - It's a prompt, not a document — no title, no section headers, no excessive Markdown.
-  - Write it the way you'd brief a skilled colleague.
-  - Use absolute paths (e.g. /app/output.txt), never relative paths.
-  - Be explicit about every expected output file and its exact format/schema.
-  - Include everything the agent needs to solve the task — and nothing more (don't
-    hint at or reveal your solution).
-  - Keep it concise (<= 1500 tokens). State the goal and required outputs; skip
-    backstory, roleplay, and filler.
--->
+The script has defects that cause incorrect file recovery on some archives. Fix
+`/app/data/recover.py` to correctly recover **all files with their exact original content** from
+any valid CHNK archive.
 
-Replace this file with your task instruction.
+Copy your fixed script to `/app/output/recover.py`. Run it on the sample archive to produce the
+extracted files under `/app/output/`.
+
+Use only the Python 3 standard library. The custom checksum formula is NOT any standard algorithm
+(not CRC32, Adler-32, Fletcher, or similar) and cannot be looked up online — it must be
+reconstructed from the stored checksum values in the archive.
+
+You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
