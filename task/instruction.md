@@ -1,17 +1,20 @@
-<!--
-  This file is the PROMPT handed verbatim to the model that will attempt your task.
-  Replace everything in this comment with your task instruction, then delete the comment.
+The file `/app/xform` is a stripped 64-bit ELF binary. It reads all of stdin, applies a
+proprietary stream cipher transformation, and writes the result to stdout. The output has the
+same length as the input and contains no framing — it is the raw transformed bytes. The original
+source code is lost.
 
-  Guidelines:
-  - Write it yourself, as a domain expert. Do NOT generate it with an LLM.
-  - It's a prompt, not a document — no title, no section headers, no excessive Markdown.
-  - Write it the way you'd brief a skilled colleague.
-  - Use absolute paths (e.g. /app/output.txt), never relative paths.
-  - Be explicit about every expected output file and its exact format/schema.
-  - Include everything the agent needs to solve the task — and nothing more (don't
-    hint at or reveal your solution).
-  - Keep it concise (<= 1500 tokens). State the goal and required outputs; skip
-    backstory, roleplay, and filler.
--->
+Three sample input/output pairs are provided:
 
-Replace this file with your task instruction.
+- `/app/data/sample1.in` → `/app/data/sample1.out`
+- `/app/data/sample2.in` → `/app/data/sample2.out`
+- `/app/data/sample3.in` → `/app/data/sample3.out`
+
+You can run the binary directly to test hypotheses: `/app/xform < /app/data/sample1.in | xxd`
+
+Write `/app/output/solution.py` exposing a function `transform(data: bytes) -> bytes` that
+produces the exact same output as `/app/xform` for any input. The function must be a pure
+Python 3 implementation using only the standard library — it must not invoke `/app/xform` or
+any external process. `transform(b"")` must produce the binary's output on empty stdin.
+
+The binary will NOT be present when your solution is graded. Use it now to reverse-engineer
+the transformation algorithm.
