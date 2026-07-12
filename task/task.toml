@@ -20,7 +20,7 @@ verification_explanation = """The verifier removes /app/xform from the filesyste
 timeout_sec = 120.0
 
 [agent]
-timeout_sec = 1800.0
+timeout_sec = 2400.0
 
 [environment]
 build_timeout_sec = 600.0
