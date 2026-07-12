@@ -4,38 +4,35 @@ Derived from reverse-engineering /app/xform:
   - 128-bit state (4 x 32-bit words), initialized via key mixing
   - Non-linear mixing round: custom xorshift-like with shift triples (9,14,6)
     plus an additive constant 0x9E3779B9
+  - INPUT-DEPENDENT: each 4-byte input word feeds back into state via XOR
   - 4-byte chunked processing with state-dependent tail handling
 """
 import struct
 
-# Initial state — extracted from the binary's init section.
-# NOTE: the compiler's register allocation shuffles the order from what
-# the C source produces. Correct ordering determined by matching output.
 _S0 = 0x3702a9e6
 _S1 = 0x9341ca26
 _S2 = 0x0a4e2902
 _S3 = 0x49445473
 
 
-def _step(s):
-    """Advance state by one round, return the 32-bit output word."""
+def _step(s, input_word):
+    """Advance state, mix in input_word, return the keystream word."""
     s0, s1, s2, s3 = s
     t = s0
     t ^= (t << 9) & 0xFFFFFFFF
     t ^= (t >> 14)
-    n0 = s1
-    n1 = s2
-    n2 = s3
+    n0, n1, n2 = s1, s2, s3
     w = s3
     w ^= (w >> 6)
     w ^= t
     w = (w + 0x9E3779B9) & 0xFFFFFFFF
-    n3 = w
+    result = w
+    n3 = w ^ input_word
     s[0] = n0
     s[1] = n1
     s[2] = n2
     s[3] = n3
-    return w
+    return result
 
 
 def transform(data: bytes) -> bytes:
@@ -44,18 +41,25 @@ def transform(data: bytes) -> bytes:
     out = bytearray()
     pos = 0
 
-    # Process full 4-byte chunks
     while pos + 4 <= len(data):
-        w = _step(s)
+        word = (data[pos]
+              | (data[pos + 1] << 8)
+              | (data[pos + 2] << 16)
+              | (data[pos + 3] << 24))
+        w = _step(s, word)
         out.append(data[pos] ^ ((w >> 0) & 0xFF))
         out.append(data[pos + 1] ^ ((w >> 8) & 0xFF))
         out.append(data[pos + 2] ^ ((w >> 16) & 0xFF))
         out.append(data[pos + 3] ^ ((w >> 24) & 0xFF))
         pos += 4
 
-    # Tail: 0-3 leftover bytes, one step produces 4 keystream bytes
     if pos < len(data):
-        w = _step(s)
+        word = 0
+        r = 0
+        while pos + r < len(data):
+            word |= (data[pos + r] << (r * 8))
+            r += 1
+        w = _step(s, word)
         while pos < len(data):
             out.append(data[pos] ^ (w & 0xFF))
             w >>= 8

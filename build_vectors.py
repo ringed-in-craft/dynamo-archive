@@ -75,15 +75,6 @@ for name, data in held_out.items():
 with open(os.path.join(OUT_TESTS, "golden.json"), "w") as f:
     json.dump(golden, f, indent=2)
 
-# Also write individual files for each held-out vector
-for name, entry in golden.items():
-    in_data = bytes.fromhex(entry["input_hex"])
-    out_data = bytes.fromhex(entry["output_hex"])
-    with open(os.path.join(OUT_TESTS, f"{name}.in"), "wb") as f:
-        f.write(in_data)
-    with open(os.path.join(OUT_TESTS, f"{name}.out"), "wb") as f:
-        f.write(out_data)
-
 print(f"\nGenerated {len(samples)} sample pairs + {len(held_out)} held-out test vectors")
 print(f"Held-out golden: {OUT_TESTS}/golden.json")
 print(f"Sample 1 output: {xform(b'The quick brown fox jumps over the lazy dog.').hex()}")
