@@ -1,14 +1,49 @@
 """Verifier — runs agent's solution.py against held-out test vectors.
 
-Before importing solution.py, the binary is removed from /app/xform.
+Before importing solution.py, the binary is removed and the source is scanned
+for smuggling attempts (subprocess imports, ELF embedding, base64 blobs).
 Tests check byte-exact output against precomputed golden values.
 """
-import os, sys, json, shutil, tempfile
+import os, sys, json, shutil, tempfile, re
 from pathlib import Path
 import pytest
 
 GOLDEN = "/tests/expected/golden.json"
 SOLUTION_PATH = "/app/output/solution.py"
+
+FORBIDDEN = [
+    r'\bimport\s+subprocess\b',
+    r'\bfrom\s+subprocess\b',
+    r'\bimport\s+ctypes\b',
+    r'\bfrom\s+ctypes\b',
+    r'\bimport\s+mmap\b',
+    r'\bfrom\s+mmap\b',
+    r'\bos\.system\b',
+    r'\bos\.popen\b',
+    r'\bos\.exec',
+    r'\bexec\s*\(',
+    r'\beval\s*\(',
+    r'\b__import__\s*\(',
+    r'/app/xform',
+]
+
+
+def test_solution_purity():
+    """Reject solutions that try to shell out, embed the binary, or exec code."""
+    src = Path(SOLUTION_PATH).read_text()
+
+    for pattern in FORBIDDEN:
+        if re.search(pattern, src):
+            pytest.fail(f"solution.py contains forbidden pattern: {pattern}")
+
+    # Check for smuggled ELF — base64 of ELF header would be f0VMRg==
+    # or the raw bytes escaped in the source
+    if 'f0VMR' in src or '\\x7fELF' in src or '\\x7f\\x45\\x4c\\x46' in src:
+        pytest.fail("solution.py appears to contain an embedded ELF binary")
+
+    # Reject unusually large solutions (binary embedding)
+    if len(src) > 50000:
+        pytest.fail(f"solution.py is too large ({len(src)} bytes) — possible binary embedding")
 
 
 @pytest.fixture(scope="module")

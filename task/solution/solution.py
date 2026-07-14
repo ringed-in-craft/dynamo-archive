@@ -1,4 +1,4 @@
-"""Reference implementation of /app/xform transform.
+"""Reference implementation of the binary transform.
 
 Length-dependent: ≤16 bytes uses simple XOR rotate, >16 bytes uses full
 non-linear stream cipher with CFB feedback and custom shift triples (9,14,6).
