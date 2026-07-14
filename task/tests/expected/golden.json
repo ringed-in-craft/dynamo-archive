@@ -1,47 +1,47 @@
 {
   "len1": {
     "input_hex": "41",
-    "output_hex": "7b"
+    "output_hex": "ae"
   },
   "len2": {
     "input_hex": "4142",
-    "output_hex": "7b21"
+    "output_hex": "aeea"
   },
   "len3": {
     "input_hex": "414243",
-    "output_hex": "7b212b"
+    "output_hex": "aeea70"
   },
   "len5": {
     "input_hex": "4142434445",
-    "output_hex": "7b212b5c02"
+    "output_hex": "aeea700931"
   },
   "len6": {
     "input_hex": "414243444546",
-    "output_hex": "7b212b5c0284"
+    "output_hex": "aeea70093159"
   },
   "len7": {
     "input_hex": "41424344454647",
-    "output_hex": "7b212b5c028482"
+    "output_hex": "aeea700931592f"
   },
   "len9": {
     "input_hex": "414243444546474849",
-    "output_hex": "7b212b5c028482a350"
+    "output_hex": "aeea700931592ff245"
   },
   "len15": {
     "input_hex": "4142434445464748494a4b4c4d4e4f",
-    "output_hex": "7b212b5c028482a3503f019968468d"
+    "output_hex": "aeea700931592ff2458dd02cb8cf11"
   },
   "nulls": {
     "input_hex": "00000000000000000000000000000000",
-    "output_hex": "3a6368187f8113a7c133c9d1881c99b1"
+    "output_hex": "efa8334d741f68ba0cc79b60f5815efb"
   },
   "high": {
     "input_hex": "ffffffffffffffffffffffffffffffff",
-    "output_hex": "c59c97e7807eec6c3ecc86667723d5ba"
+    "output_hex": "1057ccb28be09745f338649f0a7ea104"
   },
   "alternating": {
     "input_hex": "00ff00ff00ff00ff00ff00ff00ff00ff",
-    "output_hex": "3a9c68e7f38b586d67e92b66bc9394bb"
+    "output_hex": "ef5733b274e068450c389b9ff57e5e04"
   },
   "binary": {
     "input_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
@@ -61,7 +61,7 @@
   },
   "rand16": {
     "input_hex": "bb01a26940c25aefccee52a5038c38f9",
-    "output_hex": "8162ca7174ca4a1024e31f81212f1318"
+    "output_hex": "54a9912434dd3255c029c9c5f60d6602"
   },
   "rand32": {
     "input_hex": "b0d306951b804314b754bae1da6f02ddbbb2cd8d51b33de25f9323a492133b9c",

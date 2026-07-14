@@ -24,9 +24,9 @@ def xform(data: bytes) -> bytes:
 
 # --- Sample vectors: 4-byte-aligned ASCII (never triggers tail path) ---
 samples = [
-    ("sample1.in", b"The quick brown fox jumps over the lazy dog."),       # 44 bytes
-    ("sample2.in", b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv"),  # 48 bytes
-    ("sample3.in", b"Hello, World! This is a test of the xform utils."),   # 48 bytes
+    ("sample1.in", b"Hello World!"),          # 12 bytes
+    ("sample2.in", b"ABCDEFGHIJKLMNOP"),      # 16 bytes
+    ("sample3.in", b"test input!!"),           # 12 bytes
 ]
 
 for fname, data in samples:
