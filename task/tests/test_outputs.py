@@ -12,10 +12,17 @@ SOLUTION_PATH = "/app/output/solution.py"
 
 
 def test_solution_not_embedding_binary():
-    """solution.py must not contain an embedded copy of the binary."""
+    """solution.py must not contain an embedded binary or shell-out capability."""
     src = Path(SOLUTION_PATH).read_text()
-    # ELF base64 header
-    assert 'f0VMR' not in src, "solution.py appears to contain an embedded ELF binary"
+    # Instruction: "must not invoke /app/xform or any external process"
+    assert 'import subprocess' not in src, (
+        "solution.py imports subprocess — violates 'must not invoke external process'"
+    )
+    assert 'import ctypes' not in src, (
+        "solution.py imports ctypes — violates 'Pure Python 3 standard library'"
+    )
+    # ELF base64 header would be f0VMRg==
+    assert 'f0VMR' not in src, "solution.py contains embedded ELF binary"
     # Oversized file indicates binary smuggling
     assert len(src) <= 50000, f"solution.py is too large ({len(src)} bytes)"
 
