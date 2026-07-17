@@ -115,8 +115,9 @@ def _ref_build(source_dir: str, output_path: str, epoch: int) -> str:
         if os.path.exists(tmpl):
             with open(tmpl) as f:
                 c = f.read()
-            with open(tmpl, "w") as f:
+            with open(os.path.join(staging, "version.txt"), "w") as f:
                 f.write(c.replace("@EPOCH@", str(epoch)))
+            os.unlink(tmpl)
 
         # Permission normalization
         for root, dirs, files in os.walk(staging):

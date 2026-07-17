@@ -112,15 +112,17 @@ def normalize_permissions(staging_dir: str) -> None:
 # ── Template substitution ────────────────────────────────────────────────────
 
 def fill_template(staging_dir: str, epoch: str) -> None:
-    """Replace @EPOCH@ in version.txt.in with the epoch integer."""
+    """Replace @EPOCH@ in version.txt.in with the epoch integer, then rename to version.txt."""
     tmpl_path = os.path.join(staging_dir, "version.txt.in")
     if not os.path.exists(tmpl_path):
         return
     with open(tmpl_path, "r") as f:
         content = f.read()
     content = content.replace("@EPOCH@", epoch)
-    with open(tmpl_path, "w") as f:
+    new_path = os.path.join(staging_dir, "version.txt")
+    with open(new_path, "w") as f:
         f.write(content)
+    os.unlink(tmpl_path)
 
 
 # ── Generate MANIFEST.sig ────────────────────────────────────────────────────
