@@ -20,10 +20,6 @@ def run_agent():
     os.makedirs("/app/output", exist_ok=True)
     shutil.copy2(HELDOUT_SLOG, "/app/data/sample.slog")
 
-    # Remove reference binary so agent cannot subprocess it
-    if os.path.exists("/app/data/slogdec"):
-        os.remove("/app/data/slogdec")
-
     return subprocess.run(["python3", AGENT_SCRIPT, "/app/data/sample.slog"],
                           capture_output=True, text=True, timeout=30)
 
@@ -38,7 +34,7 @@ def test_agent_runs(run_agent):
     assert run_agent.returncode == 0, f"Script failed (exit {run_agent.returncode}): {run_agent.stderr}"
 
 
-def test_output_exists():
+def test_output_exists(run_agent):
     """Agent script must produce /app/output/decoded.json."""
     assert Path(AGENT_OUTPUT).exists()
 

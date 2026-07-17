@@ -7,7 +7,7 @@ SOLUTION_DIR = "/solution"
 OUTPUT_DIR = "/app/output"
 
 DECODER_SRC = '''#!/usr/bin/env python3
-"""Sensor log decoder — reverse-engineered from slogdec."""
+"""Sensor log decoder — reverse-engineered from binary format analysis."""
 import struct, json, sys, os
 
 INPUT = sys.argv[1] if len(sys.argv) > 1 else "/app/data/sample.slog"

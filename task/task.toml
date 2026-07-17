@@ -2,7 +2,7 @@ artifacts = ["/app/output/decoded.json", "/app/output/sensorlog"]
 
 [task]
 name = "dynamo/sensorlog-decoder-fix"
-description = "Reverse engineer a stripped binary decoder and write a Python equivalent"
+description = "Reverse-engineer a proprietary binary sensor log format and write a Python decoder"
 
 [metadata]
 category = "Security"
@@ -12,9 +12,9 @@ agent_tested = "Terminus-2"
 task_objective = ["implement", "analyze"]
 artifact_type = ["single_script_or_program", "generated_output_artifact"]
 expert_time_estimate_hours = 3
-difficulty_explanation = """The agent is given a binary sensor log file and its correct decoded JSON output. They must reverse-engineer the binary format — discovering magic bytes, 256-record block structure, 4-byte block headers containing base timestamps, and 6-byte records with offset/sensor ID/float fields — and write a Python decoder that works on any valid file. There is no reference implementation, no format documentation, and no source code. The agent must infer the format entirely from input-output pairs: examining raw bytes with hex dumps, trying struct format strings, validating against expected output, and iterating. The sample uses contiguous monotonic blocks where simpler interpretations might appear correct; the held-out data has temporal gaps and out-of-order blocks that expose incorrect format assumptions. This is genuine binary reverse engineering — the kind of work done in malware analysis, file format recovery, and forensic tool development. A senior reverse engineer would need 2-3 hours. Data is author-generated synthetic."""
-solution_explanation = """The binary format: 4-byte magic "SLOG", 2-byte block_size (uint16 LE, always 256). Then blocks: 4-byte base_timestamp (uint32 LE, Unix seconds), followed by block_size records. Each record: 1-byte relative_offset (uint8), 1-byte sensor_id (uint8), 4-byte value (float32 LE). Timestamp = base_timestamp + offset. The format is discovered by examining sample.slog with struct/xxd and comparing field values against expected_sample.json."""
-verification_explanation = """The verifier copies the held-out file into place and runs the agent's script. The output JSON is compared field-by-field against a pre-computed golden reference (stored only in tests/) — timestamp, sensor_id, and value must all match exactly."""
+difficulty_explanation = """The agent is given a binary sensor log file and its correct decoded JSON output. They must reverse-engineer the binary format — discovering magic bytes, variable block structure, 4-byte block headers containing base timestamps, and 6-byte records with offset/sensor ID/float fields — and write a Python decoder that works on any valid file. There is no reference implementation, no format documentation, and no source code. The agent must infer the format entirely from input-output pairs: examining raw bytes with hex dumps, trying struct format strings, validating against expected output, and iterating. The sample uses contiguous monotonic blocks where simpler interpretations might appear correct; the held-out data has temporal gaps and out-of-order blocks that expose incorrect format assumptions. This is genuine binary reverse engineering — the kind of work done in malware analysis, file format recovery, and forensic tool development. A senior reverse engineer would need 2-3 hours. Data is author-generated synthetic."""
+solution_explanation = """The binary format: 4-byte magic "SLOG", 2-byte block_size (uint16 LE, variable — read dynamically from header bytes 4-5). Then blocks: 4-byte base_timestamp (uint32 LE, Unix seconds), followed by block_size records. Each record: 1-byte relative_offset (uint8), 1-byte sensor_id (uint8), 4-byte value (float32 LE). Timestamp = base_timestamp + offset. Values must be rounded to 6 decimal places. The format is discovered by examining sample.slog with struct/xxd and comparing field values against expected_sample.json."""
+verification_explanation = """The verifier copies the held-out file into place and runs the agent's script. The output JSON is compared field-by-field against a pre-computed golden reference (stored only in tests/) — timestamp, sensor_id, and value must all match exactly (values are rounded to 6 decimal places for deterministic float comparison)."""
 
 [verifier]
 timeout_sec = 120.0
