@@ -7,7 +7,7 @@ The release process for this project requires producing a `.tar.gz` artifact who
 - Filesystem metadata in the archive is normalized: all entries have mtime equal to the epoch, owner and group are 0 (root), no user/group names are embedded, and entries are sorted in C locale order (LC_ALL=C).
 - Extended attributes, ACLs, and SELinux contexts are stripped.
 - The gzip stream carries no embedded mtime or original filename.
-- The archive includes a generated `MANIFEST.sig` at its root, containing the correct 8-hex-digit integrity marker for every file in the archive (except itself), with entries sorted in the same C-locale order as the tar entries. Each line has the format `MARKER ./path` where MARKER is uppercase hex and path is relative to the archive root. MANIFEST.sig must end with a trailing newline.
+- The archive includes a generated `MANIFEST.sig` at its root, containing the correct 8-hex-digit integrity marker for every file in the archive (except itself), with entries sorted in the same C-locale order as the tar entries. Each line has the format `MARKER archive-path` where MARKER is uppercase hex and archive-path is the file's path within the archive (e.g. `README.md`, `src/main.py`). MANIFEST.sig must end with a trailing newline.
 
 The following must be excluded from the release archive entirely: `.git` (including all contents), `.gitignore`, `.gitattributes`, `node_modules`, `*.swp`, `*~`, `.DS_Store`, `._*`, `__pycache__`, `.venv`, `*.pyc`, `Thumbs.db`, `.idea`, `.vscode`, and any pre-existing `MANIFEST.sig` in the source tree.
 
