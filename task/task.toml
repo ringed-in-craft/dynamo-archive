@@ -37,7 +37,7 @@ verification_explanation = """The verifier runs the agent's /app/build.sh agains
 
 The verifier also runs structural probes on the example output: all entry mtimes equal the epoch, entries are sorted in C locale, all uid/gid are 0, gzip header has zeroed mtime and no embedded filename, no forbidden paths appear in the archive, and MANIFEST.sig is present with correct markers. The verifier independently recomputes expected markers for each fixture using the reference algorithm, confirming the agent's implementation is correct and not a lucky approximation.
 
-Hidden fixture files are never accessible during the agent's development run, and /app/marker is absent at verification time, preventing hash hardcoding or lookup-table bypass. Multiple valid implementations are accepted as long as they produce byte-identical output to the reference GNU tar + gzip toolchain."""
+Hidden fixture files are never accessible during the agent's development run. The verifier removes `/app/marker` before executing `/app/build.sh`, enforcing the requirement that the agent's script must compute markers from its own reimplementation rather than invoking the oracle binary. Multiple valid implementations are accepted as long as they produce byte-identical output to the reference GNU tar + gzip toolchain."""
 
 [verifier]
 timeout_sec = 180.0

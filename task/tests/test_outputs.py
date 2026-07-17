@@ -171,6 +171,11 @@ def _ref_build(source_dir: str, output_path: str, epoch: int) -> str:
 
 def _run_agent_build(build_script: str, source_dir: str, epoch: int) -> str:
     """Run the agent's build.sh and return SHA-256 of output."""
+    # Remove /app/marker if present to enforce the "must not invoke" rule
+    marker_path = "/app/marker"
+    if os.path.exists(marker_path):
+        os.unlink(marker_path)
+
     output = tempfile.mktemp(suffix=".tar.gz")
     try:
         # Detect interpreter: check first line for shebang
