@@ -130,6 +130,7 @@ def _ref_build(source_dir: str, output_path: str, epoch: int) -> str:
                     os.chmod(fpath, 0o755)
                 else:
                     os.chmod(fpath, 0o644)
+        os.chmod(staging, 0o755)
 
         # MANIFEST.sig
         entries = []

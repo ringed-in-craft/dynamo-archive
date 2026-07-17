@@ -107,6 +107,8 @@ def normalize_permissions(staging_dir: str) -> None:
                 os.chmod(fpath, 0o755)
             else:
                 os.chmod(fpath, 0o644)
+    # Also normalize the staging root itself
+    os.chmod(staging_dir, 0o755)
 
 
 # ── Template substitution ────────────────────────────────────────────────────
