@@ -1,8 +1,6 @@
 The file `/app/data/samples.jsonl` contains 20 archived expression-signature pairs from a computational algebra group's in-house CAS. Each line is a JSON object with `"expr"` (a polynomial expression string in infix notation) and `"signature"` (the 64-bit integer the system's internal deduplication function produced for that expression).
 
-The deduplication function maps each expression tree to a 64-bit fingerprint, used to detect structurally identical sub-expressions during symbolic integration. The system first canonicalizes an expression — normalizing its algebraic form — then computes a signature from the canonical representation.
-
-Only these 20 archived pairs survive. Reconstruct the fingerprint function.
+The deduplication function maps each expression to a 64-bit fingerprint by first canonicalizing the expression then computing a signature from the canonical form. Only these 20 archived pairs survive. Reconstruct the fingerprint function.
 
 Write a self-contained Python 3 module at `/app/fingerprint.py` that exports:
 
