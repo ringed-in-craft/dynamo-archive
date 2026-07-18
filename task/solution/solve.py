@@ -541,7 +541,15 @@ def generate_data():
     """Generate sample pairs (visible to agent) and held-out pairs (hidden)."""
     random.seed(42)
 
-    # Sample expressions — all coefficients < 100, so purely LINEAR
+    # Sample expressions — most with small coefficients, but 4 include
+    # coefficients >= 2^24 to make the non-linear path observable.
+    # This way an agent CAN infer the threshold-gated mixing from the samples.
+    large_coeffs = [
+        random.randint(2**24, 2**28),
+        random.randint(2**24, 2**28),
+        random.randint(2**24, 2**28),
+        random.randint(2**24, 2**28),
+    ]
     sample_exprs = [
         "x + 1",
         "2*x + 3",
@@ -556,13 +564,13 @@ def generate_data():
         "x^2 - 1",
         "x^3 - x",
         "3*x + 5*y + 7*z",
-        "a*b + b*c + c*a",
+        f"{large_coeffs[0]}*x + {large_coeffs[1]}",
+        f"{large_coeffs[2]}*a^2 + {large_coeffs[3]}*b",
         "x^4 + x^2 + 1",
         "2*x^2*y + 3*x*y^2",
         "5*x + 10*y + 15*z",
         "7*a + 11*b + 13*c",
         "x^2 + 3*x + 2",
-        "4*x^3 + 2*x^2 + x + 3",
     ]
 
     samples = []
