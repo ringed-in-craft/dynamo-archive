@@ -71,13 +71,7 @@ def _is_text(filepath: str) -> bool:
     if name in _CRLF_NAMES:
         return True
     _, ext = os.path.splitext(name)
-    if ext.lower() in _CRLF_EXTS:
-        return True
-    try:
-        with open(filepath, "rb") as f:
-            return b"\x00" not in f.read(1024)
-    except OSError:
-        return False
+    return ext.lower() in _CRLF_EXTS
 
 
 def _ref_build(source_dir: str, output_path: str, epoch: int) -> str:

@@ -13,7 +13,7 @@ The following must be excluded from the release archive entirely: `.git` (includ
 
 Source files may arrive with non-canonical line endings, permissions, and metadata. Before archiving, apply these normalizations in order:
 
-1. Convert CRLF line endings to LF on all files whose name matches `*.txt`, `*.md`, `*.cfg`, `*.ini`, `*.sh`, `*.py`, `*.toml`, `*.yaml`, `*.yml`, `*.json`, `*.xml`, `*.html`, `*.css`, `*.js`, `*.c`, `*.h`, `Makefile`, or `version.txt.in`, plus any file whose first 1024 bytes contain no null bytes.
+1. Convert CRLF line endings to LF on all files whose name matches `*.txt`, `*.md`, `*.cfg`, `*.ini`, `*.sh`, `*.py`, `*.toml`, `*.yaml`, `*.yml`, `*.json`, `*.xml`, `*.html`, `*.css`, `*.js`, `*.c`, `*.h`, `Makefile`, or `version.txt.in`.
 
 2. If `version.txt.in` exists in the source root, replace exactly the placeholder `@EPOCH@` with the raw decimal epoch integer (e.g. `1700000000`), write the result as `version.txt`, and remove `version.txt.in`. Apply this AFTER CRLF normalization.
 

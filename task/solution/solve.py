@@ -70,15 +70,7 @@ def is_text_file(filepath: str) -> bool:
     if name in CRLF_NAMES:
         return True
     _, ext = os.path.splitext(name)
-    if ext.lower() in CRLF_EXTENSIONS:
-        return True
-    # Null-byte heuristic: read first 1024 bytes
-    try:
-        with open(filepath, "rb") as f:
-            head = f.read(1024)
-        return b"\x00" not in head
-    except OSError:
-        return False
+    return ext.lower() in CRLF_EXTENSIONS
 
 
 def normalize_crlf(filepath: str) -> None:
