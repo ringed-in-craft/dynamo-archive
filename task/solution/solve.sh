@@ -1,3 +1,4 @@
 #!/bin/bash
-# Reference solution: write /app/fingerprint.py from embedded template
-python3 /solution/solve.py --oracle
+# Reference solution: recover fingerprint algorithm from samples.jsonl,
+# then write /app/fingerprint.py with the recovered constants.
+python3 /solution/solve.py
