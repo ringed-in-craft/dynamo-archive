@@ -1,38 +1,35 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/fingerprint.py"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/expr-fingerprint-recovery"
+description = "Reconstruct a lost expression tree canonicalization and fingerprint function from 20 archived I/O pairs"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "Mathematics and Formal Reasoning"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Symbolic computation"                   # diversity subcategory, assigned by the Dynamo team
-# --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
-# --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+# Pre-seeded — DO NOT EDIT
+category = "Mathematics and Formal Reasoning"
+subcategory = "Symbolic computation"
+# Fixed — LEAVE AS-IS
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+# You fill these in
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program"]
+expert_time_estimate_hours = 4
+difficulty_explanation = """The agent must reconstruct a lost mathematical function — expression tree canonicalization coupled with a 64-bit signature accumulator — from input-output pairs alone. No specification, source code, or documentation survives. The work requires the skill of a CAS developer or computational mathematician who understands expression tree parsing, algebraic normalization (term ordering, GCD factoring, sign normalization, constant folding), and accumulator-based digest functions. The data is author-generated synthetic polynomial expressions with realistic coefficient distributions. The critical trap: for the small coefficients in the 20 archived sample pairs (all below 100), the signature function behaves exactly linearly with respect to coefficient and exponent contributions — a linear model over the per-variable-exponent feature space reproduces every sample signature perfectly. The true function activates a non-linear rotation-and-XOR path only when a term's coefficient exceeds 2^24 (~16 million). The 30 held-out expressions use coefficients in the 10^9 to 10^12 range, triggering this path and causing linear-model signatures to diverge by billions of bits. An agent that fits the linear model to the samples and stops will produce perfectly incorrect results on every held-out expression. The dual reconstruction — canonicalization rules AND accumulator — means the agent cannot solve one without the other; wrong canonicalization produces wrong tree structures which produce wrong signatures regardless of accumulator fidelity. This is the kind of work a symbolic computation developer at Wolfram, Maplesoft, or the SymPy project would perform when reverse-engineering an undocumented internal representation for compatibility."""
+solution_explanation = """The key insight is that the signature function separates into two layers: canonicalization and accumulation. The canonicalization rules are inferred first by comparing expression pairs: x^2*y and y*x^2 produce the same signature, revealing lexicographic term ordering with a > b > ... > z; 3*x + 2*x and 5*x produce different signatures, confirming constant folding is NOT applied (only like terms are grouped, not combined arithmetically); 2*x + 3 and -(2*x + 3) produce different signatures, confirming sign normalization via GCD factoring; x^1 and x produce identical trees, confirming exponent-1 flattening. Once the canonical form is determined, the accumulator is isolated: single-variable expression pairs with different coefficients (e.g., 2*x vs 3*x) reveal the per-variable linear weight; multi-variable terms (x*y) confirm additivity of per-variable contributions; the constant term (empty variable set) reveals the bias. The 20 samples encode the linear weights C_VAR * ord(var) + C_EXP * exp for each variable-exponent pair. With the linear weights recovered, the 30 held-out expressions — using coefficient magnitudes in the 10^9-10^12 range — exercise the hidden non-linear path: for any term where |coeff| >= 2^24, the top 40 bits of the coefficient are extracted and mixed via XOR with a hidden constant C_NL, followed by left rotation by an amount depending on the term's position modulo 3. This threshold-gated non-linearity is the mechanism that causes catastrophic divergence from the linear model's predictions. A focused domain expert familiar with tree algorithms and accumulator design can isolate all components in approximately 4 hours."""
+verification_explanation = """The verifier runs four test functions. test_module_exists_and_callable confirms /app/fingerprint.py exists, imports cleanly, and exposes a callable fingerprint that returns a 64-bit integer for valid input. test_all_sample_pairs loads the 20 archived pairs from /app/data/samples.jsonl and asserts exact signature match for each — no tolerances. test_all_heldout_pairs loads the 30 hidden held-out pairs from /tests/expected/heldout.jsonl (available only at verify time, never during the agent run) and asserts exact match. test_purity enforces anti-cheat constraints: fingerprint.py size <= 50 KB, no base64-encoded data or binary headers (ELF, ZIP, PNG), no non-stdlib imports. test_no_embedded_tables detects large precomputed data structures. All tests use exact equality comparison — no tolerances, no ranges, no partial credit. The held-out expressions are never accessible to the agent, and the fingerprint.py module must compute every signature algorithmically from the expression string argument alone."""
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 3600
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
