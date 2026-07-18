@@ -265,7 +265,8 @@ def fingerprint(expr_str):
 
 def generate_data():
     random.seed(42)
-    L = [random.randint(2**24, 2**28) for _ in range(14)]
+    # Large coeffs spanning 2^24 to 2^40 for wide spike variety
+    L = [random.randint(2**24, 2**40) for _ in range(18)]
     sample_exprs = [
         # Small-coeff — establish linear weights
         "x + 1",
@@ -278,17 +279,17 @@ def generate_data():
         "2*a + 3*b",
         "x^3 + x",
         "a^2 + 2*a*b + b^2",
-        "x^2 - 1",
-        "x^3 - x",
         "x^0 + y",                          # demonstrates x^0 convention
-        "x^4 + x^2 + 1",
-        # Large-coeff — exercise non-linear path
-        f"{L[0]}*x + {L[1]}",
-        f"{L[2]}*a^2 + {L[3]}*b",
-        f"{L[4]}*x^2 + {L[5]}*x + {L[6]}",
-        f"{L[7]}*x + {L[8]}*y + {L[9]}*z",
-        f"{L[10]}*x^2 + {L[11]}*x",
-        f"{L[12]}*a + {L[13]}*b",
+        "(x + 1)^2",                        # demonstrates expansion convention
+        # Large-coeff — exercise non-linear path, wide spike range
+        f"{L[0]}*x + {L[1]}",              # 2 terms: slots 0,1
+        f"{L[2]}*a^2 + {L[3]}*b",          # 2 terms: slots 0,1
+        f"{L[4]}*x^2 + {L[5]}*x + {L[6]}", # 3 terms: slots 0,1,2
+        f"{L[7]}*x + {L[8]}*y + {L[9]}*z", # 3 terms: slots 0,1,2
+        f"{L[10]}*x + {L[11]}",            # 2 terms: different spike
+        f"{L[12]}*a^2 + {L[13]}*b^2",      # 2 terms: multi-var large
+        f"{L[14]}*x + {L[15]}",            # 2 terms
+        f"{L[16]}*x^2 + {L[17]}*y",        # 2 terms: varied spike
     ]
     samples = [{"expr": e, "signature": str(fingerprint(e))} for e in sample_exprs]
 
