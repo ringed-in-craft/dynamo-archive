@@ -1,7 +1,4 @@
 #!/bin/bash
-# Remove the reference binary so the agent's solution can't shell out to it
-rm -f /app/xform
-
 pytest --ctrf /logs/verifier/ctrf.json /tests/test_outputs.py -rA
 
 if [ $? -eq 0 ]; then

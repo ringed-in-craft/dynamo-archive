@@ -1,23 +1,35 @@
 artifacts = ["/app/output/solution.py"]
 
 [task]
-name = "dynamo/xform-reverse-engineer"
-description = "Reverse-engineer a stripped ELF binary implementing a custom stream cipher and reimplement its transform function in pure Python"
+name = "dynamo/telemetry-codec-recovery"
+description = "Reconstruct a lost length-dependent telemetry compression codec from archived I/O frame pairs"
 
 [metadata]
 category = "Security"
-subcategory = "Exploit and CTF tasks"
+subcategory = "Reverse Engineering"
 model_tested = "Opus-4.8"
 agent_tested = "Terminus-2"
 task_objective = ["implement", "analyze"]
 artifact_type = ["single_script_or_program"]
-expert_time_estimate_hours = 3
-difficulty_explanation = """The agent is given a stripped -O2-compiled ELF binary and three sample input/output pairs. The binary implements a length-dependent transform: for inputs ≤ 16 bytes, a simple XOR-with-rotating-state; for inputs > 16 bytes, a full non-linear stream cipher with custom xorshift-like mixing (shifts 9, 14, 6), additive constant, and CFB-style input feedback. All three sample inputs are ≤ 16 bytes, so only the short path is exercised by the samples. The binary's disassembly contains both code paths joined by a conditional branch. Models will disassemble the binary, identify the short-path transform, implement it, validate against the samples (which all pass), and ship — never discovering the long-path behavior that the held-out vectors exercise. Discovering the long path requires either testing with a >16-byte input or recognizing that the disassembly contains unreached code. Both require active exploration beyond sample-validation. Data is author-generated synthetic test vectors. A senior reverse engineer would need 2-3 hours to trace both code paths and implement correctly."""
-solution_explanation = """The binary has two code paths joined by a length check (cmp $0x10 / ja). Short path (≤16 bytes): XOR each byte with the low byte of a 32-bit state, then update state via left-rotate-7 + add 0x9E3779B9. Long path (>16 bytes): full 128-bit stream cipher. The long path init loads four 32-bit constants (0x49445473, 0x0a4e2902, 0x9341ca26, 0x3702a9e6 — compiler-shuffled ordering determined by matching output). The mixing round uses custom shifts (shl 9, shr 14 on s[0], shr 6 on s[3]), a state rotation s[0]->s[1]->s[2]->s[3], additive constant (sub $0x61c88647 = add $0x9E3779B9), and CFB-style input feedback (XOR input word into new s[3] after saving keystream). The long path processes 4-byte chunks identically to v2. An expert would use objdump -d, identify the conditional branch, trace both paths, extract constants from immediates, and verify against samples (short path) and self-generated long test inputs (long path)."""
-verification_explanation = """The verifier removes /app/xform from the filesystem, imports the agent's solution.py, and runs transform() against 18 held-out test vectors stored in tests/expected/. The held-out vectors cover: odd-length inputs exercising the tail path (1,2,3,5,6,7,9,15 bytes), byte-value stress (null bytes, 0xFF, alternating, binary range), length stress (1 KB, 4 KB), empty input, and random binary inputs of varying lengths. Expected outputs are precomputed at task build time from the reference binary and stored as golden.json. The verifier compares byte-exact — any deviation, even one byte, fails. The binary is removed before solution.py is imported, so any attempt to shell out or read /app/xform fails. There is no partial credit: all 18 vectors must match exactly. A model using standard xorshift128 shifts (11,8,19) produces wrong output on every vector. A model missing the additive constant or tail scheme produces wrong output on specific vector subsets. Only a faithful reimplementation passes."""
+expert_time_estimate_hours = 4
+difficulty_explanation = """The agent must reconstruct a lost telemetry compression codec from 12 archived input/output frame pairs. The codec is length-dependent: frames of 16 bytes or fewer use a simple XOR-based transform with a rotating state; frames longer than 16 bytes use a full 128-bit stream cipher with custom non-linear mixing, state rotation, and input feedback. No source code, documentation, or binary exists — only the frame pairs.
+
+The sample set deliberately includes both short frames (4, 8, 10, 12, 14, 16 bytes) and long frames (17, 20, 32, 48, 64, 128 bytes) so the length dependency is discoverable. However, the exact threshold (≤16 vs >16) and the algorithmic details of each transform must be inferred from the data alone. The short transform uses a simple XOR keystream with a fixed seed and an additive state update; the long transform uses a 128-bit state initialized from two 64-bit keys via a mixing function, a per-word step combining xorshift and rotation operations with an additive constant, and CFB-style input feedback where each plaintext word is XORed into the state after generating the keystream. The tail handling pads partial final words with zeros before the final step.
+
+This is genuine cryptographic reverse-engineering — the kind of work done in malware analysis, legacy system migration, and forensic codec recovery. The algorithm is a custom design not matching any published cipher. Data is author-generated synthetic telemetry frames. A senior reverse engineer would need 3-4 focused hours to isolate the threshold, reconstruct both transforms, and verify correctness."""
+solution_explanation = """The solution writes /app/output/solution.py exposing `transform(data: bytes) -> bytes`.
+
+The algorithm has two paths separated by a length threshold at 16 bytes:
+
+Short path (len ≤ 16): XOR each byte with the low byte of a 32-bit state initialized to 0xDEADBEEF. After each byte, update state via left-rotate-7 and add 0x9E3779B9. The short transform can be inferred from the 6 short samples: empty input reveals no output, single-byte inputs map the XOR relationship, and multi-byte inputs confirm the state update.
+
+Long path (len > 16): Initialize a 128-bit state from two 64-bit keys (0x9E3779B97F4A7C15 and 0xBB67AE8584CAA73B) via a mixing function (XOR right-33, multiply by large odd constant, XOR right-33). Process 4-byte words: apply xorshift (shl 9, shr 14) to s[0], rotate state right (s[0]→s[1]→s[2]→s[3]), apply xorshift (shr 6) to s[3], combine with t, add 0x9E3779B9 to produce keystream word, XOR keystream with input to produce output, then XOR input word into state for feedback. Tail bytes (1-3 remaining) pad with zeros to a full word, run one final step, XOR only the needed bytes.
+
+The key insight is that the length threshold (exactly 16 bytes) and both transforms must be reconstructed from the I/O pairs. The short samples provide a simple cipher to reverse first; the long samples reveal a qualitatively different transform requiring the full state machine."""
+verification_explanation = """The verifier removes any reference binary from the filesystem, imports the agent's solution.py, and runs transform() against 22 held-out test vectors stored in tests/expected/golden.json. The held-out vectors cover: all lengths at and around the threshold (0-5, 11, 13, 15, 18, 19, 21, 31, 33, 50 bytes), byte-value stress (all zeros, all 0xFF, alternating 0x00/0xFF at both sides of the threshold), binary range, and large inputs (1 KB, 4 KB). Output is compared byte-exact against precomputed expected values. Any deviation fails. There is no partial credit."""
 
 [verifier]
-timeout_sec = 120.0
+timeout_sec = 180.0
 
 [agent]
 timeout_sec = 2400.0

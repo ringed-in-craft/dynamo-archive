@@ -1,19 +1,13 @@
-The file `/app/xform` is a stripped 64-bit ELF binary. It reads stdin, applies a transformation,
-and writes the result to stdout. The output length equals the input length with no framing.
-The original source code is lost.
+The directory `/app/data/` contains 12 sample input/output pairs from a decommissioned telemetry compression codec used by a satellite ground station. Each `.in` file is a raw telemetry frame and the corresponding `.out` file is its compressed output. The original codec source code is lost; only these archived frame pairs survive.
 
-Three sample input/output pairs are provided:
+The codec is a length-dependent transform: frames of different lengths are processed differently. All frames are byte-exact — the output length always equals the input length with no framing or headers added.
 
-- `/app/data/sample1.in` → `/app/data/sample1.out`
-- `/app/data/sample2.in` → `/app/data/sample2.out`
-- `/app/data/sample3.in` → `/app/data/sample3.out`
+Write a Python 3 module at `/app/output/solution.py` exposing:
 
-Run the binary directly to test hypotheses: `/app/xform < /app/data/sample1.in | xxd`
+```python
+def transform(data: bytes) -> bytes
+```
 
-Write `/app/output/solution.py` exposing `transform(data: bytes) -> bytes` that produces the
-exact same output as `/app/xform` for any input. Pure Python 3 standard library only — must not
-invoke `/app/xform` or any external process. `transform(b"")` must match the binary's output
-on empty stdin.
+`transform()` must produce the exact same output as the lost codec for any input. Pure Python 3 standard library only. Must not access the network or invoke external processes. `transform(b"")` must return `b""` (the empty-frame output).
 
-The binary will NOT be present when your solution is graded. Use it now to reverse-engineer
-the transformation algorithm for all possible inputs.
+The archived frame pairs in `/app/data/` are the only available information about the codec's behavior. The verifier will test your module against held-out frames from the same ground station — same format, different data — by importing `transform()` and comparing output byte-for-byte against expected values.

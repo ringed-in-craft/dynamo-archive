@@ -1,73 +1,61 @@
-"""Verifier — runs agent's solution.py against held-out test vectors.
+"""Pytest verifier for the telemetry codec reconstruction task.
 
-Before importing solution.py, the binary is removed from /app/xform.
-Tests check byte-exact output against precomputed golden values.
+Imports the agent's solution.py and runs transform() against held-out
+test vectors stored in tests/expected/golden.json.
 """
-import os, sys, json, shutil, tempfile
-from pathlib import Path
-import pytest
 
-GOLDEN = "/tests/expected/golden.json"
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+GOLDEN_PATH = "/tests/expected/golden.json"
 SOLUTION_PATH = "/app/output/solution.py"
 
 
-def test_solution_not_embedding_binary():
-    """solution.py must not contain an embedded binary or shell-out capability."""
-    src = Path(SOLUTION_PATH).read_text()
-    # Instruction: "must not invoke /app/xform or any external process"
-    assert 'import subprocess' not in src, (
-        "solution.py imports subprocess — violates 'must not invoke external process'"
-    )
-    assert 'import ctypes' not in src, (
-        "solution.py imports ctypes — violates 'Pure Python 3 standard library'"
-    )
-    # ELF base64 header would be f0VMRg==
-    assert 'f0VMR' not in src, "solution.py contains embedded ELF binary"
-    # Oversized file indicates binary smuggling
-    assert len(src) <= 50000, f"solution.py is too large ({len(src)} bytes)"
+def _load_transform():
+    """Import the agent's transform function from solution.py."""
+    spec = importlib.util.spec_from_file_location("solution", SOLUTION_PATH)
+    assert spec is not None, f"Could not load {SOLUTION_PATH}"
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["solution"] = mod
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod.transform
 
 
-@pytest.fixture(scope="module")
-def solution_module():
-    """Import the agent's solution module."""
-    assert Path(SOLUTION_PATH).exists(), f"{SOLUTION_PATH} not found"
-
-    # Verify binary was removed by test.sh
-    assert not Path("/app/xform").exists(), (
-        "/app/xform still present — test.sh should have removed it"
-    )
-
-    sys.path.insert(0, "/app/output")
-    import solution
-    return solution
+def _load_golden():
+    """Load held-out test vectors."""
+    with open(GOLDEN_PATH) as f:
+        return json.load(f)
 
 
-@pytest.fixture(scope="module")
-def golden():
-    """Load golden test vectors from tamper-proof temp copy."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_golden = os.path.join(tmp, "golden.json")
-        shutil.copy2(GOLDEN, tmp_golden)
-        with open(tmp_golden) as f:
-            return json.load(f)
+def test_module_loads():
+    """The agent's solution.py must expose a callable transform function."""
+    transform = _load_transform()
+    assert callable(transform), "transform is not callable"
 
 
-def test_solution_module(solution_module, golden):
-    """solution.py must expose transform(data: bytes) -> bytes."""
-    assert callable(solution_module.transform), "transform is not callable"
-    # Basic smoke test
-    result = solution_module.transform(b"")
-    assert isinstance(result, bytes), f"transform returned {type(result)}, expected bytes"
+def test_empty_input():
+    """Empty input must produce empty output."""
+    transform = _load_transform()
+    result = transform(b"")
+    assert result == b"", f"transform(b'') returned {result.hex()}"
 
 
-def test_heldout_vectors(solution_module, golden):
-    """Every held-out vector must match golden output byte-exact."""
-    for name, entry in sorted(golden.items()):
-        input_data = bytes.fromhex(entry["input_hex"])
+def test_all_held_out_vectors():
+    """All held-out test vectors must match byte-exact."""
+    transform = _load_transform()
+    golden = _load_golden()
+    
+    for name, entry in golden.items():
+        inp = bytes.fromhex(entry["input_hex"])
         expected = bytes.fromhex(entry["output_hex"])
-        actual = solution_module.transform(input_data)
+        actual = transform(inp)
         assert actual == expected, (
-            f"{name}: length {len(input_data)} -> "
-            f"expected {expected.hex()[:40]}..., "
-            f"got {actual.hex()[:40]}..."
+            f"Vector '{name}' mismatch:\n"
+            f"  input length: {len(inp)}\n"
+            f"  expected: {expected[:32].hex()}...\n"
+            f"  got:      {actual[:32].hex() if actual else '(empty)'}..."
         )
