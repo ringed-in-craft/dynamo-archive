@@ -1,0 +1,10 @@
+CAPTION
+
+{CASE}: {TITLE}
+
+{INTRO}
+
+{CONCLUSION}
+
+Respectfully,
+{SIGNER}

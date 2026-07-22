@@ -1,0 +1,8 @@
+{{HEADER}} {CASE_ID}: {TITLE}
+	Filed by {ATTORNEY}
+
+Body text with {CITATION} reference.
+  
+Signed:	{SIGNER}
+
+

@@ -1,0 +1,3 @@
+Line with spaces   
+Clean line
+Another line with tabs		

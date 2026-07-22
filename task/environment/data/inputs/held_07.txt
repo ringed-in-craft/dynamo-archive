@@ -1,0 +1,1 @@
+Año {YEAR}: resolución {RES}.

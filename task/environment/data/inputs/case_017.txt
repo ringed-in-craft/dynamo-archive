@@ -1,0 +1,2 @@
+Empty braces {} are literal.
+Non-empty {OK} works.

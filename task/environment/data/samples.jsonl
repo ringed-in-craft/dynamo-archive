@@ -1,0 +1,20 @@
+{"input": "case_001.txt", "output": "This is case CV-2024-00123, filed on 2024-03-15.\n", "data": {"CASE_ID": "CV-2024-00123", "DATE": "2024-03-15"}}
+{"input": "case_002.txt", "output": "Use {brace} to denote VALUE values.\n", "data": {"KEY": "VALUE"}}
+{"input": "case_003.txt", "output": "Text} with unmatched close and yes.\n", "data": {"MATCH": "yes"}}
+{"input": "case_004.txt", "output": "Name:   Tab inside  End.\n", "data": {"TABVAL": "Tab\tinside"}}
+{"input": "case_005.txt", "output": "Line with spaces\nClean line\nAnother line with tabs\n", "data": {}}
+{"input": "case_006.txt", "output": "First paragraph.\n\nSecond paragraph.\n", "data": {}}
+{"input": "case_007.txt", "output": "{CASE} A001: test\n  Indented text\nFooter\n", "data": {"CASE": "A001", "VALUE": "test"}}
+{"input": "case_008.txt", "output": "\ufeffCase BC-2024-00892 vs Acme Corp\nFiled: 2024-06-01\n", "data": {"CASE_ID": "BC-2024-00892", "DEFENDANT": "Acme Corp", "DATE": "2024-06-01"}}
+{"input": "case_009.txt", "output": "\ufeffValue: {literal} and replaced.\n", "data": {"KEY": "replaced"}}
+{"input": "case_010.txt", "output": "A\u00f1o del caso ES-2024-00045: 2024\n", "data": {"CASE_ID": "ES-2024-00045", "YEAR": "2024"}}
+{"input": "case_011.txt", "output": "D\u00e9cision du tribunal: Accord\u00e9e\nDate: 2024-02-28\n", "data": {"RULING": "Accord\u00e9e", "DATE": "2024-02-28"}}
+{"input": "case_012.txt", "output": "PLAINTIFF'S ORIGINAL PETITION\n\nTO THE HONORABLE JUDGE:\n\nComes now Plaintiff and files this petition.\n", "data": {}}
+{"input": "case_013.txt", "output": "Case CV-2024-00500 vs Case CV-2024-00500 -- appeal of Case CV-2024-00500.\n", "data": {"ID": "CV-2024-00500"}}
+{"input": "case_014.txt", "output": "    John Doe\n123 Main St\nAustin, TX 78701\n", "data": {"NAME": "John Doe", "ADDRESS": "123 Main St", "CITY": "Austin", "STATE": "TX", "ZIP": "78701"}}
+{"input": "case_015.txt", "output": "    First line\n        Second line\nNormal line\n", "data": {}}
+{"input": "case_016.txt", "output": "Ref: ABC-123-XYZ\n", "data": {"REF": "ABC-123-XYZ"}}
+{"input": "case_017.txt", "output": "Empty braces {} are literal.\nNon-empty yes works.\n", "data": {"OK": "yes"}}
+{"input": "case_018.txt", "output": "Case: CV-2024-99999, Court: District Court\n", "data": {"CASE_NUMBER": "CV-2024-99999", "COURT_NAME": "District Court"}}
+{"input": "case_019.txt", "output": "Document body.\n", "data": {}}
+{"input": "case_020.txt", "output": "{HEADER} CV-2024-10000: Motion to Dismiss\n    Filed by Jane Smith\n\nBody text with See {{Roe v. Wade}} 410 U.S. 113 reference.\n\nSigned: J. Smith, Esq.\n", "data": {"CASE_ID": "CV-2024-10000", "TITLE": "Motion to Dismiss", "ATTORNEY": "Jane Smith", "CITATION": "See {{Roe v. Wade}} 410 U.S. 113", "SIGNER": "J. Smith, Esq."}}
