@@ -1,17 +1,13 @@
-<!--
-  This file is the PROMPT handed verbatim to the model that will attempt your task.
-  Replace everything in this comment with your task instruction, then delete the comment.
+A proprietary data-integrity tool used by a financial settlement system was lost during a server migration. The only surviving artifacts are 20 archived input-output pairs in `/app/data/samples.jsonl` — short text strings and their 16-character lowercase hex fingerprints, captured from the tool's production log before it was lost.
 
-  Guidelines:
-  - Write it yourself, as a domain expert. Do NOT generate it with an LLM.
-  - It's a prompt, not a document — no title, no section headers, no excessive Markdown.
-  - Write it the way you'd brief a skilled colleague.
-  - Use absolute paths (e.g. /app/output.txt), never relative paths.
-  - Be explicit about every expected output file and its exact format/schema.
-  - Include everything the agent needs to solve the task — and nothing more (don't
-    hint at or reveal your solution).
-  - Keep it concise (<= 1500 tokens). State the goal and required outputs; skip
-    backstory, roleplay, and filler.
--->
+Each line of `/app/data/samples.jsonl` is a JSON object with `"input"` (the string that was fingerprinted) and `"fingerprint"` (the 16-char hex result). The fingerprint function is a custom 64-bit algorithm — it is not any published or standard hash function.
 
-Replace this file with your task instruction.
+Reconstruct the fingerprint algorithm from the samples, then write `/app/output/fingerprints.jsonl` containing the fingerprint for every input string listed in `/app/data/queries.jsonl`. Each line of `/app/data/queries.jsonl` is `{"input": "<string>"}` — you must compute the fingerprint for each and emit one JSON object per line: `{"input": "<string>", "fingerprint": "<16-char hex>"}`. Output order must match input order.
+
+The fingerprint is computed as a mathematical function over the ASCII byte values of the input string, operating on 64-bit unsigned integers with wrap-around at 2^64. It combines a linear accumulation pass and a non-linear mixing pass in a separable structure — derive the hidden constants from the samples. The algorithm uses exactly four 64-bit constants, all of which are recoverable from the visible samples alone.
+
+Your implementation must be pure Python standard library and compute the fingerprint from first principles — do not invoke external processes, use network access, or attempt to locate the original tool (it no longer exists). Write a self-contained Python module at `/app/fingerprint.py` that exports a function `fingerprint(text: str) -> str` returning the 16-char hex fingerprint, then use that module to produce `/app/output/fingerprints.jsonl`.
+
+The verifier will check `/app/output/fingerprints.jsonl` for exact string equality against the reference. Every input in the queries file has exactly one correct 16-char hex output. Any deviation from the expected value on any input fails the task.
+
+You have 2700 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
