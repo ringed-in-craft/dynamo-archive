@@ -6,8 +6,6 @@ Reconstruct the fingerprint algorithm from the samples, then write `/app/output/
 
 The fingerprint is computed as a mathematical function over the ASCII byte values of the input string, operating on 64-bit unsigned integers with wrap-around at 2^64. It combines a linear accumulation pass and a non-linear mixing pass in a separable structure — derive the hidden constants from the samples. The algorithm uses exactly four 64-bit constants, all of which are recoverable from the visible samples alone.
 
-Your implementation must be pure Python standard library and compute the fingerprint from first principles — do not invoke external processes, use network access, or attempt to locate the original tool (it no longer exists). Write a self-contained Python module at `/app/fingerprint.py` that exports a function `fingerprint(text: str) -> str` returning the 16-char hex fingerprint, then use that module to produce `/app/output/fingerprints.jsonl`.
+Your implementation must be pure Python standard library and compute the fingerprint from first principles — do not invoke external processes, use network access, or attempt to locate the original tool (it no longer exists).
 
 The verifier will check `/app/output/fingerprints.jsonl` for exact string equality against the reference. Every input in the queries file has exactly one correct 16-char hex output. Any deviation from the expected value on any input fails the task.
-
-You have 2700 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
