@@ -4,7 +4,7 @@ Each line of `/app/data/samples.jsonl` is a JSON object with `"input"` (the stri
 
 Reconstruct the fingerprint algorithm from the samples, then write `/app/output/fingerprints.jsonl` containing the fingerprint for every input string listed in `/app/data/queries.jsonl`. Each line of `/app/data/queries.jsonl` is `{"input": "<string>"}` — you must compute the fingerprint for each and emit one JSON object per line: `{"input": "<string>", "fingerprint": "<16-char hex>"}`. Output order must match input order.
 
-The fingerprint is computed as a mathematical function over the ASCII byte values of the input string, operating on 64-bit unsigned integers with wrap-around at 2^64. It combines a linear accumulation pass and a non-linear mixing pass in a separable structure — derive the hidden constants from the samples. The algorithm uses exactly four 64-bit constants, all of which are recoverable from the visible samples alone.
+The fingerprint is a deterministic custom mathematical function operating on the ASCII byte values of the input string over 64-bit unsigned integers with wrap-around at 2^64. All parameters needed to reconstruct the function are recoverable from the 20 visible samples.
 
 Your implementation must be pure Python standard library and compute the fingerprint from first principles — do not invoke external processes, use network access, or attempt to locate the original tool (it no longer exists).
 
