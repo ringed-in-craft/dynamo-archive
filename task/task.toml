@@ -1,4 +1,4 @@
-artifacts = ["/app/audit.py"]
+artifacts = ["/app/output/scores.jsonl"]
 
 [task]
 name = "dynamo/mesh-score-recovery"
