@@ -1,38 +1,34 @@
-artifacts = []  # paths the verifier reads from the agent (e.g. ["/app/output.json"]) — must be above the first [section]
+artifacts = ["/app/output/transforms.jsonl"]
 
 [task]
-name = "dynamo/your-task-name"  # required format: org/name (Harbor needs the slash); name part lowercase kebab-case, <=3 words
-description = ""                 # one-line summary of the task
+name = "dynamo/sparse-transform-recovery"
+description = "Reconstruct a lost banded-matrix transform with non-linear encoding from archived input-output vector pairs"
 
 [metadata]
-# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
-category = "Mathematics and Formal Reasoning"                      # diversity category, assigned to your task by the Dynamo team
-subcategory = "Computational Linear algebra"                   # diversity subcategory, assigned by the Dynamo team
-# --- Fixed for this dataset — LEAVE AS-IS ---
-model_tested = "Opus-4.8"           # difficulty-benchmarking model (do not change)
-agent_tested = "Terminus-2"        # difficulty-benchmarking agent (do not change)
-# --- You fill these in ---
-# task_objective / artifact_type: pick from .dynamo/diversity-taxonomy.toml (lowercase snake_case).
-task_objective = []                # e.g. ["implement", "debug"]
-artifact_type = []                 # e.g. ["codebase", "configuration_file"]
-expert_time_estimate_hours = 0     # best-case hours for a focused domain expert with the intended insight
-difficulty_explanation = ""        # why this task is hard for agents and humans
-solution_explanation = ""          # high-level approach and key insights
-verification_explanation = ""      # how the tests verify correctness
+category = "Mathematics and Formal Reasoning"
+subcategory = "Computational Linear algebra"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = "A computational linear algebra team lost the source code for a custom sparse-matrix transform used in their iterative solver framework. The routine takes a dense input vector and produces an encoded output vector by first applying a banded sparse linear operator and then applying an element-wise non-linear encoding. The only surviving artifacts are 21 archived input-output vector pairs from the solver's production runs. The agent must reconstruct the full transform from these pairs alone. This is the work of a numerical linear algebra specialist or scientific computing engineer who would reverse a lost solver component from production traces. The difficulty has two stacked layers, both load-bearing for the category. First, the linear operator is a tridiagonal matrix with position-dependent diagonal weights — each output element depends on its corresponding input element and its two immediate neighbors. A naive dense least-squares approach overfits to the specific vector length of the visible samples and fails on held-out vectors of different dimension. The agent must discover the banded structure by analyzing how input changes at one position propagate to neighboring output positions, using the visible basis vectors to directly read off the off-diagonal coupling weight. Second, the output incorporates an element-wise non-linear encoding that mixes each linear output value with a position-scaled hidden constant using XOR then adds a final seed — all modulo 2^64. The XOR and addition operations do not commute, making the encoding non-invertible by pure linear regression. Frontier models default to dense least-squares or treat the problem as simple function approximation, failing on both the structural sparsity and the non-linear layer. The XOR-then-add encoding is inherently non-invertible via linear regression because XOR does not distribute over addition, requiring the solver to isolate constants through algebraic separability rather than function fitting. The data is author-generated synthetic — input vectors with controlled value distributions mimicking iterative solver state vectors, paired with encoded output vectors. The synthetic design includes identity cases: the zero vector directly reveals both the XOR mixing constant and the additive seed via position-dependent differences, and unit basis vectors directly reveal the diagonal and off-diagonal weights without requiring any system solving. A numerical linear algebra specialist performing this work would be recovering a lost iterative solver component from production traces — a task requiring structured system identification and modular arithmetic reasoning."
+
+solution_explanation = "The solver recovers all four constants from identity samples using four lines of modular arithmetic. The zero vector of length at least 2 reveals both the XOR mixing constant C_NL and the additive seed SEED directly: at position i, the encoding XORs with C_NL*(i+1) then adds SEED, so the difference between outputs at positions 0 and 1 yields C_NL, and subtracting C_NL from position 0 gives SEED. With C_NL and SEED known, a unit basis vector at position 0 reveals the diagonal weight C_DIAG directly from the output at position 0 (where no neighbor coupling exists), and the off-diagonal weight C_OFF from the output at position 1 (which receives the right-neighbor contribution from the unit at position 0). No linear system solving is required — all constants are isolated by the separable structure of the transform. A numerical linear algebra specialist could complete this in 2-3 focused hours."
+
+verification_explanation = "The verifier checks the agent's output file /app/output/transforms.jsonl against a pre-computed golden reference in /tests/expected/held_out.jsonl. Two test functions verify correctness. test_agent_output_exists confirms the output file is a real file under /app/ (not a symlink). test_transforms_exact_match loads both the agent's output and the golden reference, then asserts exact element-by-element integer equality for every input-output vector pair. The held-out set contains 34 input vectors spanning empty vectors, single elements, zero vectors of various lengths, unit basis vectors at different positions, scaled vectors, random vectors, and vectors of different dimensions — exercising every edge case of the tridiagonal operator and the position-scaled encoding. Correctness is deterministic: the transform is a mathematical function with exactly one correct output vector per input, and the verifier checks exact integer equality element by element. There are no tolerances or ranges."
 
 [verifier]
-timeout_sec = 120.0                # increase based on your test suite's runtime demands
-# Canonical TB2: the verifier runs in the environment image (no separate tests/Dockerfile).
-# Harbor overlays tests/ at verify time; leave environment_mode unset for this shared model.
+timeout_sec = 120.0
 
 [agent]
-timeout_sec = 120.0                # raise for hard tasks — agents may run for many minutes or hours
+timeout_sec = 3600
 
 [environment]
-build_timeout_sec = 600.0          # max seconds for the Docker build
-cpus = 1                           # increase for parallel/compute-heavy workloads
-memory_mb = 2048                   # increase for large datasets or in-memory processing
-storage_mb = 10240                 # increase for tasks with large files or build artifacts
-gpus = 0                           # max 1, expect H100
-allow_internet = true              # open internet is available to the agent
-mcp_servers = []                   # optional MCP servers to expose to the agent
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
