@@ -1,0 +1,4 @@
+task/jobs/
+__pycache__/
+*.pyc
+jobs/

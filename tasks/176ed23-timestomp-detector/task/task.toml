@@ -1,0 +1,34 @@
+artifacts = ["/app/audit.py"]
+
+[task]
+name = "dynamo/timestomp-detector"
+description = "Detect forged MFT birth timestamps by correlating against the USN change journal across record reuse"
+
+[metadata]
+category = "Security"
+subcategory = "Digital Forensics"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program"]
+expert_time_estimate_hours = 4
+difficulty_explanation = "A forensic analyst investigates a compromised Windows host. Two artifacts are available: an MFT export listing every live file with its record number, sequence number, path, and birth timestamp, and a USN change journal export recording filesystem events with USN offset, timestamp, record number, sequence number, and reason flags. The intruder has timestomped several files — replacing their birth timestamps to make a dropper blend into a system directory. The agent must write an analyzer that detects which files carry forged birth timestamps. This is the work of a DFIR analyst doing anti-forensics validation: reconciling MFT timestamps against the change journal to identify timestamp manipulation, documented adversary tradecraft (MITRE ATT&CK T1070.006). The difficulty has two stacked traps that mask each other. First, the USN journal addresses files by record number and sequence number together — but record number looks like a natural identity column, is right for nearly every file, and reproduces the shipped sample exactly. It is wrong because NTFS reuses MFT records: when a file is deleted, its record number is handed to the next file created, and only the sequence number distinguishes the two occupants. The shipped sample has zero reused records, so an analyzer that joins on record number alone passes every sample check and stops. Held-out cases introduce files living in reused records, where a record-number-only join silently attaches a dead file's FILE_CREATE record to the current occupant, fabricating evidence. Second, the journal has a retention boundary: records older than the oldest surviving entry are purged. Inside this window, a file with no FILE_CREATE record has been forged — the journal should have captured its creation. Outside the window, the same absence proves nothing since the file legitimately predates the journal. Get the join wrong and fabricated creation records hide the forgery. Get the window wrong and clean files are flagged while stomped files walk. Each trap masks the other's failure, and the sample exercises neither — it has no reused records and every file has a matching FILE_CREATE record inside the window. The data is author-generated synthetic, seeded from a model of a plausible workstation so the answer is a property of this one host and not retrievable online. Every determination is forced by readable data: reused records are visible as one record number carrying different sequence numbers, and the window start is the oldest surviving record's timestamp. No rule is hidden and no artifact lies. The sample is a real case that simply does not discriminate. A DFIR analyst performing this work would reconcile these two artifacts after an intrusion — a task that requires discovering non-obvious properties of the data, not recalling a technique."
+
+solution_explanation = "The solver must discover two non-obvious properties of this host's data, neither of which is punished by the shipped sample. First, MFT record numbers are reused: one record number can appear with different sequence numbers in the MFT export, meaning a join on record number alone silently attaches journal events from a deleted file to a live one. The correct join uses the full file reference (record number, sequence number). Second, the journal's retention boundary converts an absent FILE_CREATE record into evidence: if a file's recorded birth timestamp falls inside the journal window (at or after the oldest surviving journal entry's timestamp) yet no FILE_CREATE record exists under its full file reference, its birth timestamp was fabricated. If the birth predates the window, a missing creation record is uninformative — the file legitimately predates the journal. The reference approach parses both CSV exports, indexes journal records by (record_number, sequence_number), derives the window start as the minimum journal timestamp, and classifies each live file: with a FILE_CREATE record, forged if the recorded birth differs from the creation timestamp; without one, forged if the birth is at or after the window start. The analyzer emits a JSON object with a single key 'tampered' containing the sorted list of forged file paths. A DFIR analyst who works with these exports could complete this in about 4 hours: approximately one hour to parse and correlate the exports, and three hours to discover from the data that record numbers repeat and that an absent creation record changes meaning across the retention boundary."
+
+verification_explanation = "The verifier runs the agent's /app/audit.py as a subprocess against the sample case and three held-out cases, then compares the output JSON against pre-computed reference outputs stored in /tests/expected/. Four test functions verify correctness. test_agent_script_exists confirms /app/audit.py is a real file (not a symlink). test_sample_case runs the analyzer against the shipped sample and asserts the tampered list matches the expected empty set. test_held_out_case is parametrized over the three held-out directories and asserts exact list equality — same paths, same sort order — against the reference. The verifier also checks that every element of the tampered list is a string. Verification is deterministic: every case has exactly one correct set of forged paths determined by the data. There are no tolerances — the output is a discrete set of paths compared by exact equality. The analyzer runs under a subprocess timeout well below the verifier timeout, so a hung analyzer still produces a graded result. The sample case has no reused records and no forged files, so a record-number-only join produces identical output to the correct full-reference join — proving nothing about correctness. Held-out cases add live files in reused records and files with forged timestamps inside the journal window, each case containing a meaningful proportion of tampered files that only a correct join and window analysis can identify."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 1800
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
