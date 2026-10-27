@@ -1,0 +1,55 @@
+artifacts = ["/app/build.sh"]
+
+[task]
+name = "dynamo/reproducible-release-tarball"
+description = "Produce byte-reproducible release tarballs with a custom integrity marker from unclean source trees"
+
+[metadata]
+# --- Pre-seeded — DO NOT EDIT ---
+category = "Build Dependency and Release Management"
+subcategory = "Release Artifacts"
+# --- Fixed for this dataset — leave as-is ---
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+# --- You fill these in ---
+task_objective = ["build_or_package", "analyze"]
+artifact_type = ["single_script_or_program", "archive_or_compressed_artifact"]
+expert_time_estimate_hours = 4
+difficulty_explanation = """This task requires dual expertise spanning release engineering and algorithmic reverse-engineering — the kind of cross-domain work performed by release engineers at organizations practicing SLSA or in-toto supply-chain attestation.
+
+The first challenge is producing a deterministic .tar.gz archive from an unclean source tree. Seven independent nondeterminism sources must be controlled simultaneously: filesystem metadata (readdir sort order, mtimes including future dates requiring clamp-mtime, uid/gid and user/group names), archive format metadata (PAX headers embedding nanosecond timestamps, long paths silently switching format, extended attributes and ACLs), and compressor metadata (gzip mtime, original filename, OS byte). Fixing any subset produces a plausible-looking archive whose SHA-256 still differs from the reference by dozens of bytes. Additionally, step ordering matters — CRLF normalization must precede template substitution and permission normalization, or a version.txt.in with CRLF line endings produces wrong content and a bin/*.sh with CRLF endings misses its executable bit.
+
+The second challenge is reconstructing the project's proprietary integrity marker algorithm from archived I/O pairs alone. The marker tool was lost; only 17 file-to-marker pairs survive in `/app/data/samples/MANIFEST.sig`. The marker is a custom 32-bit dual-accumulator non-linear mixing function with xorshift, LCG multiplication, bit rotation, cross-accumulator feedback, and a final XOR mask — structurally unlike any published checksum or hash. No specification or binary exists; the algorithm must be inferred by mathematical reconstruction: testing hypotheses against the known pairs, isolating each operation's parameters (empty input for initial state, single-byte inputs for additive/XOR steps, positioned multi-byte inputs for shift and rotation amounts), and validating against the full sample set. The 17 samples provide enough surface for systematic probing to uniquely determine all parameters, but the non-linear search space is far beyond brute-force enumeration.
+
+Data is author-generated synthetic constructed to mirror real conditions: mixed-case filenames exercising locale-dependent sort order, files with future mtimes, .git and editor droppings, non-canonical permissions, CRLF line endings, template files, deeply nested paths exceeding 100 characters, and extended attributes. The sample tree is deliberately simple — four ASCII files with uniform permissions — giving no hint of the edge cases in the hidden fixtures."""
+
+solution_explanation = """The solution writes /app/build.sh as a self-contained script accepting --source, --output, and --epoch.
+
+Phase 1 — Staging: copy source to a staging directory applying the documented exclusion patterns (.git, node_modules, *.swp, *~, .DS_Store, ._*, __pycache__, .venv, *.pyc, Thumbs.db, .idea, .vscode, MANIFEST.sig). Then apply normalizations in order: (1) CRLF→LF using the documented name-match and null-byte heuristic, (2) template substitution replacing @EPOCH@ in version.txt.in with the raw epoch integer and renaming to version.txt, (3) permission normalization to 0644/0755 with the documented bin/*.sh rule, including the staging root directory.
+
+Phase 2 — Integrity marker: mathematically reconstruct the algorithm from the 17 archived file-to-marker pairs in /app/data/samples/MANIFEST.sig. Empty input isolates the combined initial-state XOR mask value (0x44D8A009 reveals a ^ b ^ mask with zero-length input). Single-byte probes 0x00, 0x01, 0xFF map the additive and XOR contributions per byte. Two-byte probes with swapped order (0x00 0x01 vs 0x01 0x00) reveal the xorshift direction and rotation amount. Repeating-byte probes (0xAA * 16 vs 0x55 * 16) confirm the byte-independent mixing properties. The full sample set validates the derived LCG multiplier (0x41C64E6D), increment (0x6073), shift amount (13), rotation amount (7), and final XOR mask (0xA5A5A5A5). The algorithm is reimplemented within build.sh as pure computation over file contents.
+
+Phase 3 — Archiving: generate MANIFEST.sig by computing markers for every file in the staging tree (sorted in C locale) and writing them in MARKER archive-path format. Then create the tarball with LC_ALL=C tar --sort=name --mtime=@EPOCH --clamp-mtime --owner=0 --group=0 --numeric-owner --format=gnu --no-xattrs --no-acls --no-selinux piped through gzip -n -9.
+
+The key insight for the tar phase is that the seven determinism flags must be applied with correct step ordering — CRLF first, then templates, then permissions. For the marker phase, the insight is methodical component isolation from I/O pairs rather than reading from a binary or specification."""
+
+verification_explanation = """The verifier runs the agent's /app/build.sh against nine source trees: the two shipped examples (example/ and example_dirty/) and seven hidden fixtures, each targeting a distinct reproducibility trap (locale-dependent sort, future mtimes, exclusion patterns, permission normalization, CRLF + template, long paths, extended attributes). An attempt passes only if all nine SHA-256 values match the reference exactly — reproducibility is binary with no tolerance.
+
+The verifier also runs structural probes on the example output: all entry mtimes equal the epoch, entries are sorted in C locale, all uid/gid are 0, gzip header has zeroed mtime and no embedded filename, no forbidden paths appear in the archive, and MANIFEST.sig is present with correct markers. The verifier independently recomputes expected markers for each fixture using the reference algorithm, confirming the agent's implementation is correct and not a lucky approximation.
+
+Hidden fixture files are never accessible during the agent's development run. The verifier independently recomputes expected markers for each fixture using the reference algorithm, confirming the agent's implementation is correct and not a lucky approximation. Multiple valid implementations are accepted as long as they produce byte-identical output to the reference GNU tar + gzip toolchain."""
+
+[verifier]
+timeout_sec = 180.0
+
+[agent]
+timeout_sec = 2400.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []

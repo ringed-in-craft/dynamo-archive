@@ -1,0 +1,17 @@
+1AEB15F6 ./ascii_abc.dat
+3133AB7E ./ascii_hello.dat
+0F63B0E4 ./byte_00.dat
+02E7925A ./byte_01.dat
+7F67F2E6 ./byte_7f.dat
+C29B6AE4 ./byte_80.dat
+0EE730E6 ./byte_ff.dat
+44D8A009 ./empty.dat
+21BE730F ./increasing.dat
+716CFE05 ./medium_text.dat
+25A85EEF ./mixed_content.dat
+BA282363 ./repeated_55.dat
+66F14DED ./repeated_aa.dat
+62481A35 ./three_00_00_01.dat
+B3DDAE11 ./two_00_01.dat
+7B74D408 ./two_01_00.dat
+34B22123 ./two_ff_ff.dat
