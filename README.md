@@ -47,6 +47,13 @@ Every task in this archive follows the same authoring discipline:
 
 Result: **0/5 passed. Five valid failures, zero timeouts, zero verifier errors** — the strongest difficulty signal the benchmark permits, with the oracle still scoring 1.0.
 
+## Archive notes
+
+- **Per-task READMEs** describe each task's problem, the specific trap that made it hard, how the verifier resists gaming, and the calibration result, followed by that task's real commit log.
+- **Pointer CI workflows were removed.** Each task originally carried `.github/workflows/` files that delegated to a reusable workflow hosted under the (now defunct) upstream organisation, using `pull_request_target` with `secrets: inherit`. Republishing that pattern on a public repository is a supply-chain footgun if the organisation name is ever released and re-registered, so the files were stripped. They were centrally-maintained scaffolding, not authored work.
+- **Two tasks share names** (`sparse-transform`, and the `fingerprint` pair) because the second was an independent rebuild of the same problem with a harder encoding. They are distinguished by their short IDs.
+- **Not recovered:** the pass@5 trial tables and human reviewer verdicts lived in pull-request comments inside the deleted organisation, so they are lost. The commit history, the reasoning behind each design decision, and the calibration outcomes recorded above survive.
+
 ## Note on scope
 
 These are benchmark-authoring artifacts, not exploits or client work. They exist to measure where frontier coding agents break. 25 commits on the flagship task is not 25 features — a large share are CI retriggers against an evaluator that intermittently failed to post results.

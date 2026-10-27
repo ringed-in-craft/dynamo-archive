@@ -1,28 +1,38 @@
-# Reporting Pipeline Fix
+# dynamo/reporting-pipeline-fix
 
-A Terminal-Bench 2 task: fix a broken monthly financial reporting pipeline that produces silently incorrect output due to multiple SQL grain bugs and a query-plan anti-pattern.
+**Category:** Data Querying and Databases — Query optimization · **Objective:** fix · **Artifact:** single_script_or_program, generated_output_artifact
 
-## Overview
+## The problem
 
-The agent inherits a Python script that queries a SQLite database and writes a quarterly revenue report. The script runs without errors but produces wrong numbers due to:
+A Python report generator attempts to implement an authoritative written spec against a SQLite database, and gets it wrong on cases the shipped sample never exercises.
 
-1. A JOIN fan-out inflating per-order discount totals
-2. Shipping costs summed at the wrong aggregation grain
-3. Cancelled and refunded orders incorrectly included in revenue
-4. A missing composite index causing a full table scan
+## What makes it hard
 
-## Approach
+Two bugs are visible and act as lures; two hidden requirements — a discount cap and a `LEFT JOIN` where the code uses `INNER JOIN`, plus a status filter — only fail on the held-out database. Fixing the visible bugs produces a confident, wrong submission.
 
-The agent must iteratively diagnose each bug by running the pipeline, writing exploratory SQL, fixing queries, and re-verifying after each change. Each fix brings the output closer to correct but never all the way — the agent must actively re-check rather than stopping at "close enough."
+## How it's verified
 
-## Environment
+The verifier runs the agent's script against the held-out database and compares the produced report against golden output, so partial fixes score zero.
 
-Python 3.13 with SQLite3. The task image is built from the pre-approved Python slim-bookworm base. Pytest and pytest-json-ctrf are baked in for verification.
+## Calibration
 
-## Verification
+Redesigned mid-flight from visible-bug to spec-based hidden-requirements, after the original design was too easy to pass on the sample alone.
 
-The verifier runs the agent's fixed script against a held-out database (same schema, different seed with different data distributions) and checks:
+## Commit history
 
-- The report CSV matches the golden reference exactly (2 decimal places)
-- EXPLAIN QUERY PLAN shows USING INDEX with no SCAN orders
-- Edge cases: NULL foreign keys, zero-item orders, cancelled/refunded orders
+10 commits in this task's repository.
+
+- Redesign: spec-based hidden requirements (discount cap + LEFT JOIN) — sample hides them, held-out exposes
+- Add 2 hidden bugs (status filter + INNER JOIN) - visible bugs act as lure, hidden bugs only fail on held-out DB
+- Fix golden: zero-item orders contribute 0 discount/shipping, use consistent %.2f formatting
+- Drop index requirement - contradicts instruction and unstated in spec
+- Fix: strip bug-revealing comments, remove timeout line, move fixed script to separate file, fix fixture dependency
+- Add .dockerignore for build context
+- Task submission: reporting pipeline fix
+- Seed task.toml metadata from upload CSV
+- Stamp task repo name into README
+- Initial commit
+
+---
+
+Part of the [Dynamo Task Archive](../..). Authored for Project Dynamo / Terminal-Bench 2 (Harbor).

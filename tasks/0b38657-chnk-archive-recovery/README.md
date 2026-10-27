@@ -1,18 +1,37 @@
-# CHNK Archive Recovery
+# dynamo/chnk-archive-recovery
 
-A Terminal-Bench 2 task: fix a broken CHNK archive recovery tool.
+**Category:** File and Media Operations — Recovery and repair · **Objective:** fix, recover_or_repair_artifact · **Artifact:** single_script_or_program, archive_or_compressed_artifact
 
-## Overview
+## The problem
 
-A legacy backup system stored files as chunked archives (CHNK format) with redundant copies per chunk. The recovery tool has two defects: it reads data sizes in wrong endianness and uses CRC32 instead of the archive's custom prime-weighted checksum. The agent must fix both to correctly recover files from corrupted archives.
+A Python recovery script extracts files from a corrupted chunked archive (CHNK format) and gets the chunk parsing and checksum validation wrong. A format spec ships alongside.
 
-## Environment
+## What makes it hard
 
-- Python 3.13 on Debian Bookworm (slim)
-- Sample CHNK archive with 3 files (all copy-A intact)
-- Format specification (FORMAT.md)
-- Broken recover.py script
+The first checksum was linear and therefore brute-forceable from the sample; it was replaced with a non-linear mixing function so the recovery cannot be shortcut.
 
-## Verification
+## How it's verified
 
-The verifier replaces the sample archive with a held-out archive where some chunks have copy-A corrupted and copy-B intact. The agent's fixed script must use the correct checksum to select the intact copy for each chunk. Output files are verified byte-for-byte via SHA-256 against a golden reference.
+Byte-for-byte comparison of recovered files against the true contents, plus checksum validation on held-out chunks.
+
+## Calibration
+
+9 commits, including the v2 checksum hardening to close the brute-force path.
+
+## Commit history
+
+9 commits in this task's repository.
+
+- Fix rubric: add data provenance, real-world audience, remove cross-task reference
+- retry CI
+- trigger CI rerun
+- v2: Replace linear checksum with non-linear mixing function — un-brute-forceable
+- Fix rubric: remove TB3 timeout line from instruction, trim artifacts to recover.py only
+- CHNK archive recovery: fix broken chunk-parsing and checksum validation
+- Seed task.toml metadata from upload CSV
+- Stamp task repo name into README
+- Initial commit
+
+---
+
+Part of the [Dynamo Task Archive](../..). Authored for Project Dynamo / Terminal-Bench 2 (Harbor).
