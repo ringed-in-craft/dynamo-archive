@@ -1,0 +1,34 @@
+artifacts = ["/app/output/scores.jsonl"]
+
+[task]
+name = "dynamo/mesh-score-recovery"
+description = "Reconstruct a lost mesh-quality scoring function from triangle-score pairs using sorted squared edge lengths"
+
+[metadata]
+category = "Mathematics and Formal Reasoning"
+subcategory = "Computational Geometry"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = "A computational geometry team lost the source code for their mesh-quality scoring routine. The routine takes a triangle defined by three integer-coordinate vertex pairs and produces a 64-bit quality score. The only surviving artifacts are 20 archived triangle-score pairs. The agent must reconstruct the scoring function from these pairs alone. This is the work of a computational geometer or mesh-generation specialist reconstructing a lost simulation utility from production traces. The difficulty has two stacked layers. First, the agent must discover that the score depends on the sorted squared edge lengths — not raw coordinates, not perimeter, not area, not angle measures. The visible samples include triangles at different scales and shapes where alternative geometric features would produce contradictory scores, so the correct feature set is discriminable but must be inferred through hypothesis testing against the data. Second, the scoring function combines the sorted squared edge lengths with hidden multiplicative coefficients. The recovery is a linear system identification problem over Z/2^64: with 20 samples and 3 hidden coefficients, the system is over-determined and solvable via modular linear algebra. However, the system matrix is inherently rank-deficient modulo powers of 2 when using geometric edge triples, requiring the solver to handle the non-invertible determinant structure — a subtlety of modular arithmetic over rings that are not fields. The data is author-generated synthetic: triangles with integer vertex coordinates producing systematic variation in edge lengths, scales, and shapes. A computational geometer performing this work would be recovering lost production code from logged I/O traces — a task requiring geometric feature identification and modular system solving."
+
+solution_explanation = "The solver identifies sorted squared edge lengths as the operative features by computing them from integer coordinates and testing against the samples. The score depends linearly on three sorted squared edge lengths: score = e0*X1 + e1*X2 + e2*X3 + SEED mod 2^64, where X1, X2, X3 are hidden products. The point triangle (all vertices coincident, all edges zero) directly reveals SEED. A line triangle (two coincident vertices) reveals the sum X2 + X3. With SEED and X2+X3 known, the system reduces to two unknowns (X1, X2) with 14 over-determining equations from proper triangles. The recovery uses modular linear algebra over Z/2^64: pick any two proper triangles with linearly independent edge vectors, solve the 2x2 system handling the inevitably even determinant via factoring out powers of 2 and lifting the solution from a reduced modulus. Verification against all 20 samples confirms correctness. A computational geometer comfortable with integer arithmetic and modular linear algebra could complete this in 2-3 focused hours."
+
+verification_explanation = "The verifier checks the agent's output file /app/output/scores.jsonl against pre-computed golden references in /tests/expected/held_out.jsonl. Two test functions verify correctness. test_agent_output_exists confirms the output file is a real file under /app/ (not a symlink). test_scores_exact_match loads both the agent's output and the golden reference, then asserts exact 16-character hex string equality for every input-output pair. The held-out set contains 21 triangles spanning point triangles, line triangles, right triangles, scalene triangles, obtuse triangles, and triangles at different integer scales — exercising the full range of the scoring function. Correctness is deterministic: the score is a mathematical function with exactly one correct hex output per triangle. All geometric computations use exact integer arithmetic with no floating point, so all correct implementations produce identical scores. There are no tolerances or ranges."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 2700
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
