@@ -1,0 +1,32 @@
+artifacts = ["/app/report.json"]
+
+[task]
+name = "dynamo/log-report"
+description = "Parse an Apache-style access log into a small JSON summary report."
+
+[metadata]
+category = "data_processing_and_etl"
+subcategory = "text_processing"
+task_objective = ["transform", "generate"]
+artifact_type = ["text_or_log_file", "generated_output_artifact"]
+expert_time_estimate_hours = 0.3
+model_tested = "GPT-5.4"
+agent_tested = "Terminus-2"
+difficulty_explanation = "The task requires parsing a semi-structured access log with regex, tracking state across lines (IPs, paths, request counts), and emitting a structured JSON report. A naive approach might miss edge cases in the log format or fail to extract the correct fields. The task is straightforward for an experienced engineer but requires careful string handling."
+solution_explanation = "Read /app/access.log line by line. For each line, increment a counter, extract the client IP from the first whitespace-delimited field, and extract the request path from the quoted HTTP request using a regex. Use a set to track unique IPs and a Counter to tally path frequencies. Write the summary as a JSON object with keys total_requests, unique_ips, and top_path to /app/report.json."
+verification_explanation = "Tests assert that /app/report.json exists, contains valid JSON with the expected keys, and that the values match the known ground truth from the fixed access log fixture. The nop agent (does nothing) produces no file and fails the existence check; a partial implementation that writes an empty or wrong JSON fails the content assertions."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 120.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
