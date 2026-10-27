@@ -1,0 +1,34 @@
+artifacts = ["/app/output/transforms.jsonl"]
+
+[task]
+name = "dynamo/sparse-transform-recovery"
+description = "Reconstruct a lost banded-matrix transform with non-linear encoding from archived input-output vector pairs"
+
+[metadata]
+category = "Mathematics and Formal Reasoning"
+subcategory = "Computational Linear algebra"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program", "generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = "A computational mathematics team lost the source code for a custom sparse-matrix transform used in their spectral element solver. The routine takes a dense input vector and produces an encoded output vector by first applying a banded sparse matrix with position-dependent weights (a local stencil derived from mesh geometry) and then applying an element-wise numerical stability encoding that mixes values using non-commuting modular arithmetic operations (XOR and addition modulo 2^64). The only surviving artifacts are 20 archived input-output vector pairs from the solver's production runs. The agent must reconstruct the full transform — both the linear operator and the encoding — from these pairs alone. This is the work of a computational mathematician or numerical-linear-algebra specialist who would reconstruct a lost operator from production traces in a scientific computing environment. The difficulty has two genuine layers. First, the linear operator is tridiagonal with position-dependent weights — it cannot be recovered by naive dense least-squares, which would overfit to the specific vector length of the visible samples and fail on held-out vectors of different dimension. The agent must discover the banded structure and infer the weight pattern from the I/O relationships using structured system identification: injecting unit vectors to isolate off-diagonal coupling, recognizing that the diagonal weight grows linearly with position index. Second, the output vectors incorporate a non-linear element-wise encoding designed to detect numerical drift in the original solver. This encoding XORs each element with a position-scaled mixing constant then adds a final seed, making it impossible to treat the problem as pure linear regression. Frontier models default to dense least-squares or assume a standard numerical transform, failing on both the structural sparsity and the non-linear mixing layer. The data is author-generated synthetic — input vectors with controlled value distributions mimicking spectral-element nodal data, paired with encoded output vectors from the custom transform. The synthetic design allows systematic variation of vector dimension and value range while preserving the realistic complexity of structured operator recovery. A computational mathematician performing this work in the real world would be recovering a lost scientific computing routine from production logs — a task that requires genuine linear-algebraic reasoning, not pattern-matching against known transforms."
+
+solution_explanation = "The solver decomposes the problem into two coupled stages. First, identify the non-linear encoding parameters from zero-input vectors: a zero-vector of length at least 2 reveals both the XOR mixing constant C_NL and the additive seed SEED, because the encoding XORs each position i with C_NL*(i+1) then adds SEED — the difference between positions 0 and 1 directly yields C_NL, and subtracting C_NL from position 0 gives SEED. With the encoding stripped (subtract SEED, XOR back the position-scaled mixing), the linear tridiagonal structure emerges. Second, analyze unit basis vectors: a unit at position 0 reveals the diagonal weight C_DIAG directly (since position 0 has no left neighbor), and the off-diagonal weight C_OFF surfaces at position 1 (the right neighbor of the unit). These two constants plus the two encoding constants fully determine the transform. The solver verifies against all 20 samples, then applies the recovered transform to the held-out query vectors. A computational mathematician comfortable with sparse matrix identification and modular arithmetic could complete this in 2-3 focused hours."
+
+verification_explanation = "The verifier checks the agent's output file /app/output/transforms.jsonl against a pre-computed golden reference in /tests/expected/held_out.jsonl. Two test functions verify correctness: test_agent_output_exists confirms the output file is a real file under /app/ (not a symlink), and test_transforms_exact_match loads both the agent's output and the golden reference, then asserts exact element-by-element integer equality for every input-output vector pair. The held-out set contains 51 input vectors spanning empty vectors, single elements, zero vectors of various lengths, unit basis vectors at different positions, random vectors, alternating patterns, and vectors of different dimensions — exercising every edge case of the tridiagonal operator and the encoding. Correctness is deterministic: the transform is a mathematical function with exactly one correct output vector per input, and the verifier checks exact integer equality element by element on all 51 pairs. There are no tolerances or ranges — the output space is discrete and deterministic."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 2700
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
