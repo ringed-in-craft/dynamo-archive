@@ -1,0 +1,35 @@
+artifacts = ["/app/fingerprint.py"]
+
+[task]
+name = "dynamo/expr-fingerprint-recovery"
+description = "Reconstruct a lost expression tree canonicalization and fingerprint function from 20 archived I/O pairs"
+
+[metadata]
+# Pre-seeded — DO NOT EDIT
+category = "Mathematics and Formal Reasoning"
+subcategory = "Symbolic computation"
+# Fixed — LEAVE AS-IS
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+# You fill these in
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program"]
+expert_time_estimate_hours = 4
+difficulty_explanation = """The agent must reconstruct a lost expression canonicalization and fingerprint function from 20 input-output pairs alone. No specification or source code survives. The work requires the skill of a CAS developer or computational mathematician who understands expression tree parsing, algebraic normalization (term ordering, GCD factoring, sign normalization, expansion of parenthesized powers), and accumulator design. The data is author-generated synthetic polynomial expressions. The fingerprint algorithm is: (1) canonicalize the expression — sort terms by degree then lexicographic, factor GCD, normalize leading sign, expand powers; (2) sum linear contributions c*ord(var)*C_VAR + exp*C_EXP over all terms; (3) XOR the per-term non-linear values c*C_NL; (4) add SEED. The 20 sample pairs include: expressions establishing the linear weights; '0' and '1' providing SEED and C_NL directly; 'x^0 + y' demonstrating that zero-exponent variables are retained; '(x+1)^2' demonstrating full expansion; '-x' demonstrating sign handling (the algorithm factors GCD, making '-x' normalize to 'x' with leading coefficient positive); and expressions with large coefficients (2^24 to 2^40) ensuring the XOR contribution is nontrivial. The reconstruction requires inferring: (1) the canonicalization rules from structural comparisons between sample pairs; (2) SEED from sig('0'); (3) C_NL from sig('1') - SEED; (4) C_VAR and C_EXP by fitting the linear system Cv*sc + Ce*se = sig - xorsum - S across all samples after accounting for the known XOR contribution. An agent applying standard math conventions (x^0→1, -x≠x, no expansion) will fail to reproduce sample signatures and must discover the actual conventions from the data. This is the kind of reverse-engineering work a symbolic computation developer would perform when recovering an undocumented CAS internal representation for compatibility."""
+solution_explanation = """The signature function separates into two layers: canonicalization and accumulation. Canonicalization rules are inferred from sample pairs: x^2*y and y*x^2 produce the same signature (lexicographic term ordering a>b>...>z); '(x+1)^2' and 'x^2+2*x+1' produce the same signature (full expansion); 'x^0+y' retains the zero-exponent term rather than simplifying x^0→1; '-x' and 'x' produce the same signature (GCD factoring normalizes leading sign positive, dropping the negative). The accumulator is then isolated from the canonicalized terms. SEED is simply sig('0') since the empty expression has no terms. C_NL is sig('1') - SEED since the constant 1 contributes only c*C_NL = C_NL to the XOR accumulator. With SEED and C_NL known, the XOR contribution for any expression is computable as XOR over all terms of (c*C_NL). Subtracting XOR and SEED from each signature yields the linear equation Cv*sc + Ce*se = sig - xorsum - S, where sc = sum(c*ord(var)) and se = sum(exp). Two independent sample pairs with odd determinant provide a solvable 2x2 linear system over Z/2^64, uniquely determining C_VAR and C_EXP. A focused domain expert can recover all four constants and the canonicalization rules in approximately 3 hours."""
+verification_explanation = """The verifier runs five test functions. test_module_exists_and_callable confirms /app/fingerprint.py exists, imports cleanly, and exposes a callable fingerprint that returns a 64-bit integer for valid input. test_all_sample_pairs loads the 20 archived pairs from /app/data/samples.jsonl and asserts exact signature match for each — no tolerances. test_all_heldout_pairs loads the 30 hidden held-out pairs from /tests/expected/heldout.jsonl (available only at verify time, never during the agent run) and asserts exact match. test_purity enforces anti-cheat constraints: fingerprint.py size <= 50 KB, no base64-encoded data or binary headers (ELF, ZIP, PNG), no non-stdlib imports. test_no_embedded_tables detects large precomputed data structures. All tests use exact equality comparison — no tolerances, no ranges, no partial credit. The held-out expressions are never accessible to the agent, and the fingerprint.py module must compute every signature algorithmically from the expression string argument alone."""
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 3600
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
