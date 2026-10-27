@@ -1,0 +1,34 @@
+artifacts = ["/app/output/documents.jsonl"]
+
+[task]
+name = "dynamo/filing-pipeline-recovery"
+description = "Reconstruct a lost document filing pipeline (encoding detection, template substitution, whitespace normalization) from archived input-output pairs"
+
+[metadata]
+category = "File and Media Operations"
+subcategory = "Text editing and manipulation"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program", "generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = "A document services firm lost the source code for their filing-preparation pipeline during a server migration. The pipeline reads raw client submission files and produces cleaned, template-filled documents for court filing. The only surviving artifacts are 20 archived input-output pairs and the raw input files themselves. The agent must reconstruct the full pipeline — encoding detection, template substitution, and whitespace normalization — from these pairs. This is the work of a legal document specialist or text-processing engineer who would reverse a lost ETL pipeline from production traces in a law firm or compliance shop. The difficulty has three genuinely hard layers, and every parameter is inferable from the visible data. First, the input files span multiple character encodings: the visible samples include UTF-8, UTF-16LE with BOM, and ISO-8859-1 files with high-byte characters that fail UTF-8 decoding. The agent must implement a deterministic encoding detection heuristic checking the BOM, null-byte frequency, and UTF-8 validity, with a UTF-8-first-then-Latin-1 fallback rule that must be inferred from a sample where Latin-1 produces accented characters UTF-8 would corrupt. Second, template substitution uses a brace-state machine with escaping rules: {KEY} is replaced from the data dictionary, {{ and }} are escape sequences producing literal braces, unmatched closing braces pass through, and empty braces {} are literal. Every escaping case is exercised in the visible samples. Third, whitespace normalization applies a rule stack: tabs expand to 4-space stops, trailing whitespace is stripped, and consecutive blank lines are collapsed to a single empty line. The tab width and collapse behavior are observable from visible samples. The deepest conceptual challenge is rule ordering: template substitution runs on the raw decoded text, and whitespace normalization runs afterward on the expanded result. This ordering is determinable from a visible sample where a template value contains a tab character — the output shows the tab expanded to 4 spaces, which can only happen if normalization processes the template-expanded text. A sound expert who applies normalization first would fail to expand the tab inside the dictionary value. The data is author-generated synthetic text — legal intake forms with realistic placeholder usage, header blocks, and paragraph text spanning multiple encodings — paired with pipeline-processed output. A text-processing engineer performing this work in the real world would be reconstructing a lost document automation tool from production logs."
+
+solution_explanation = "The solver decomposes the pipeline into four stages and verifies each against the visible samples. Encoding detection: check for the UTF-16LE BOM (0xFF 0xFE), check null-byte frequency for UTF-16LE without BOM, attempt UTF-8 decoding, and fall back to ISO-8859-1 on failure. The fallback behavior is inferable from the visible Latin-1 sample where n-tilde (0xF1) fails UTF-8 decoding. Template substitution: implement a stateful parser scanning for {KEY} patterns, with {{ and }} consuming two characters to emit a single literal brace, unmatched } passing through, and empty {} treated as literal text. The data dictionary is provided per query. Whitespace normalization: expand tabs to 4-space stops using modulo arithmetic, strip trailing whitespace per line, collapse consecutive blank lines. The tab width is observable from visible samples with tab indentation. Rule ordering: the visible sample where a template value contains a tab character proves normalization runs after substitution — the output shows the expanded tab. Test both orderings against visible samples to confirm. A text-processing engineer or ETL developer could complete this in 2-3 focused hours."
+
+verification_explanation = "The verifier checks the agent's output file /app/output/documents.jsonl against a pre-computed golden reference in /tests/expected/held_out.jsonl. Two test functions verify correctness: test_agent_output_exists confirms the output file is a real file under /app/ (not a symlink), and test_documents_exact_match loads both the agent's output and the golden reference, then asserts exact byte-for-byte string equality for every input-output pair. The held-out set contains 12 input files distinct from the 20 visible samples, spanning all three encodings, escaping edge cases (}}}, empty {}, {{literals}}), tab expansion in template values, blank line collapse, and trailing whitespace removal. The queries.jsonl file provides the data dictionary for each query. Correctness is deterministic: the pipeline is a mathematical function over the raw bytes, and the verifier checks exact string equality. There are no tolerances or ranges — any character-level difference fails."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 2700
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []

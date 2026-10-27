@@ -1,0 +1,2 @@
+Décision du tribunal: {RULING}
+Date: {DATE}

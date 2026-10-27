@@ -1,0 +1,12 @@
+{"input": "held_01.txt", "data": {"DOCKET": "CV-2025-00001"}}
+{"input": "held_02.txt", "data": {"CODE": "XYZ"}}
+{"input": "held_03.txt", "data": {"X": "val"}}
+{"input": "held_04.txt", "data": {"T": "tab_val"}}
+{"input": "held_05.txt", "data": {"MOTION": "Summary Judgment", "PARTY": "Defendant"}}
+{"input": "held_06.txt", "data": {"PARTIE": "Demandeur"}}
+{"input": "held_07.txt", "data": {"YEAR": "2025", "RES": "APROBADA"}}
+{"input": "held_08.txt", "data": {}}
+{"input": "held_09.txt", "data": {}}
+{"input": "held_10.txt", "data": {"A": "1", "B": "2", "D": "4"}}
+{"input": "held_11.txt", "data": {"V": "tab\there"}}
+{"input": "held_12.txt", "data": {"CASE": "CV-2025-50000", "TITLE": "Opposition to Motion", "INTRO": "Comes now the Plaintiff and opposes for the reasons below.", "CONCLUSION": "WHEREFORE Plaintiff requests denial.", "SIGNER": "A. Attorney"}}

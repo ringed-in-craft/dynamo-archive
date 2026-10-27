@@ -1,0 +1,12 @@
+{"input": "held_01.txt", "output": "New case CV-2025-00001 opened.\n"}
+{"input": "held_02.txt", "output": "Escaped: {code} vs real XYZ.\n"}
+{"input": "held_03.txt", "output": "Trailing }} and val mid.\n"}
+{"input": "held_04.txt", "output": "    Indented    with    value   tab_val.\n"}
+{"input": "held_05.txt", "output": "\ufeffMotion: Summary Judgment -- Defendant\n"}
+{"input": "held_06.txt", "output": "D\u00e9claration de Demandeur\n"}
+{"input": "held_07.txt", "output": "A\u00f1o 2025: resoluci\u00f3n APROBADA.\n"}
+{"input": "held_08.txt", "output": "NOTICE OF APPEARANCE\n\nPlease enter appearance for defendant.\n"}
+{"input": "held_09.txt", "output": "  Line one\n    Line two\nLine three\n"}
+{"input": "held_10.txt", "output": "Keys: 1, 2, {C}, }, 4\n"}
+{"input": "held_11.txt", "output": "Col:    tab here    End\n"}
+{"input": "held_12.txt", "output": "CAPTION\n\nCV-2025-50000: Opposition to Motion\n\nComes now the Plaintiff and opposes for the reasons below.\n\nWHEREFORE Plaintiff requests denial.\n\nRespectfully,\nA. Attorney\n"}
