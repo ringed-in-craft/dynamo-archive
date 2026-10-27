@@ -1,0 +1,54 @@
+{"input": ""}
+{"input": "0"}
+{"input": "A"}
+{"input": "z"}
+{"input": " "}
+{"input": "!!"}
+{"input": "aa"}
+{"input": "bb"}
+{"input": "cc"}
+{"input": "dd"}
+{"input": "aaa"}
+{"input": "bbb"}
+{"input": "ccc"}
+{"input": "abcd"}
+{"input": "wxyz"}
+{"input": "1234"}
+{"input": "5678"}
+{"input": "hello world"}
+{"input": "test driven"}
+{"input": "the quick brown fox"}
+{"input": "jumps over the lazy dog"}
+{"input": "aaaaaaaaaa"}
+{"input": "bbbbbbbbbb"}
+{"input": "ababababab"}
+{"input": "ZZZZZZZZZZZZZZZZZZZZ"}
+{"input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"input": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
+{"input": "!@#$%^&*()"}
+{"input": "abcdefghijklmnop"}
+{"input": "1a2b3c4d5e6f7g8h"}
+{"input": "pad_to_exact_size"}
+{"input": "exactly16charss"}
+{"input": "one_more_char_17"}
+{"input": "short"}
+{"input": "muchlongerstringwithmanycharactersandstuff"}
+{"input": "back_to_short"}
+{"input": "alpha"}
+{"input": "beta"}
+{"input": "gamma"}
+{"input": "delta"}
+{"input": "epsilon"}
+{"input": "omega"}
+{"input": "kappa"}
+{"input": "sigma"}
+{"input": "theta"}
+{"input": "lambda"}
+{"input": "mu"}
+{"input": "nu"}
+{"input": "xi"}
+{"input": "pi"}
+{"input": "rho"}
+{"input": "tau"}
+{"input": "upsilon"}
+{"input": "phi"}

@@ -1,0 +1,37 @@
+artifacts = ["/app/output/fingerprints.jsonl"]
+
+[task]
+name = "dynamo/fingerprint-recovery"
+description = "Reconstruct a lost custom 64-bit fingerprint algorithm from archived input-output pairs and apply it to held-out strings"
+
+[metadata]
+# --- Pre-seeded for you when this repo was created — DO NOT EDIT ---
+category = "Mathematics and Formal Reasoning"
+subcategory = "Number theory and exact arithmetic"
+# --- Fixed for this dataset — LEAVE AS-IS ---
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+# --- You fill these in ---
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program", "generated_output_artifact"]
+expert_time_estimate_hours = 3
+difficulty_explanation = "A proprietary data-integrity tool used by a financial infrastructure team was lost during a server migration. The only surviving artifacts are 20 archived input-output pairs — short ASCII strings and their 16-character hex fingerprints — captured during the tool's production lifetime. The agent must mathematically reconstruct the fingerprint algorithm from these pairs alone. This is the work of a cryptanalyst or number theorist reconstructing an unknown function from black-box observations — the same skill used to audit proprietary hash functions or reverse custom checksums in digital forensics. The difficulty is genuine: the algorithm uses a non-linear mixing operation (XOR combined with modular addition over 64-bit unsigned integers) where the two operations do not commute, meaning agents cannot treat the fingerprint as a simple linear combination of character weights. Frontier models default to searching known hash functions (CRC variants, FNV-1a, MurmurHash, splitmix) or brute-forcing linear formulas, but the combined XOR+addition accumulator produces behavior that no standard hash function exhibits. Discovering the algorithm requires forming and testing hypotheses about the accumulator state, recognizing that the non-linear layer is separable from the linear layer, deriving constants by solving modular linear systems over Z/2^64, and handling the wrap-around behavior of 64-bit modular arithmetic. The 20 visible samples are author-generated synthetic data — short ASCII identifiers mimicking log keys, transaction IDs, and configuration tokens — paired with output from a custom fingerprint function. The synthetic design allows systematic coverage of the input space (different lengths, character ranges, and internal patterns) while preserving the realistic complexity of reconstructing an unknown function from finite samples. A mathematician or cryptanalyst doing this work in the real world would be reconstructing a proprietary integrity check from production logs — a task that requires genuine number-theoretic reasoning, not pattern-matching against known algorithms."
+
+solution_explanation = "The solver must treat this as a mathematical reconstruction problem, not a hash-identification exercise. The key insight is structural separation: the fingerprint algorithm can be decomposed into a linear pass (each character beyond the first contributes a weighted amount to a running 64-bit accumulator via modular multiplication and addition), followed by a non-linear pass (XOR the accumulator with a per-character mixing value), and a final additive seed. Because the operations are separable (all linear contributions first, then all XOR, then final +SEED), the solver can recover the four constants in stages. First, the empty-string fingerprint directly yields the SEED constant. Second, the single-character sample '1' (ASCII 49, odd and therefore invertible modulo 2^64) reveals the XOR mixing constant C_NL via simple modular subtraction and division. Third, subtracting the known XOR and SEED contributions from each remaining sample leaves a purely linear system of equations over Z/2^64. With 18 multi-character samples, the solver selects any two independent rows with an odd determinant, solves the 2×2 modular linear system for C_VAR and C_EXP, and verifies against all samples. A senior mathematician or cryptanalyst who recognizes the separable structure and is comfortable with modular arithmetic could complete this in 2–3 focused hours."
+
+verification_explanation = "The verifier checks the agent's output file /app/output/fingerprints.jsonl against a pre-computed golden reference in /tests/expected/held_out.jsonl. Two test functions verify correctness: test_agent_output_exists confirms the output file is a real file under /app/ (not a symlink), and test_fingerprints_exact_match loads both the agent's output and the golden reference, then asserts exact string equality for every input-output pair. The held-out set contains 54 input strings spanning empty strings, single characters, short and long strings, repeated characters, digit strings, and mixed alphanumeric tokens — exercising every edge case of the algorithm. Correctness is deterministic: the fingerprint function is a mathematical function with exactly one correct 16-character hex output per input, and the verifier checks exact string equality on all 54 pairs. A solution passes only if every single fingerprint matches the reference exactly. There are no tolerances or ranges — the output space is discrete and deterministic."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 2700
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []

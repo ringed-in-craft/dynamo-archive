@@ -1,0 +1,54 @@
+{"input": "", "fingerprint": "9e3779b97f4a7c15"}
+{"input": "0", "fingerprint": "8a2130149058d085"}
+{"input": "A", "fingerprint": "a8594b54d10de3c2"}
+{"input": "z", "fingerprint": "e07ed3e0f54ee807"}
+{"input": " ", "fingerprint": "e6289df6355409b5"}
+{"input": "!!", "fingerprint": "1ad50850c3a617c3"}
+{"input": "aa", "fingerprint": "0ae268b1c8778583"}
+{"input": "bb", "fingerprint": "03f2f3dce8d625e3"}
+{"input": "cc", "fingerprint": "b95c9d3c842b4715"}
+{"input": "dd", "fingerprint": "2b1f64d09a76e919"}
+{"input": "aaa", "fingerprint": "ee93465caa8ab881"}
+{"input": "bbb", "fingerprint": "9c1320bfd5065811"}
+{"input": "ccc", "fingerprint": "3e2638b0690b5f3d"}
+{"input": "abcd", "fingerprint": "07d57881b49ee3a2"}
+{"input": "wxyz", "fingerprint": "0f6e30b6ce479aa6"}
+{"input": "1234", "fingerprint": "54aec83086e304e2"}
+{"input": "5678", "fingerprint": "bd0eab28bfdb993a"}
+{"input": "hello world", "fingerprint": "eba938c24a28b329"}
+{"input": "test driven", "fingerprint": "fed0f1233cdd44ec"}
+{"input": "the quick brown fox", "fingerprint": "82464f289c9b5aa5"}
+{"input": "jumps over the lazy dog", "fingerprint": "79b7c8515b94b31e"}
+{"input": "aaaaaaaaaa", "fingerprint": "3272bff1c10172a7"}
+{"input": "bbbbbbbbbb", "fingerprint": "8c7712f881d9643b"}
+{"input": "ababababab", "fingerprint": "447bbc45a34550b6"}
+{"input": "ZZZZZZZZZZZZZZZZZZZZ", "fingerprint": "4096b8ecaf2d299d"}
+{"input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fingerprint": "88dbbbf3d9de971b"}
+{"input": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "fingerprint": "32e1653b78029e9e"}
+{"input": "!@#$%^&*()", "fingerprint": "8ec22e56b169acc7"}
+{"input": "abcdefghijklmnop", "fingerprint": "24d4a81692cca404"}
+{"input": "1a2b3c4d5e6f7g8h", "fingerprint": "d67a0b1e50599f98"}
+{"input": "pad_to_exact_size", "fingerprint": "9a4fe2ba0b41c131"}
+{"input": "exactly16charss", "fingerprint": "dc0591de7e76a857"}
+{"input": "one_more_char_17", "fingerprint": "6e76359e5c79e58b"}
+{"input": "short", "fingerprint": "c0ca0c4e02895fe0"}
+{"input": "muchlongerstringwithmanycharactersandstuff", "fingerprint": "c2e209acf12c63c5"}
+{"input": "back_to_short", "fingerprint": "63d73cd7a8b50c32"}
+{"input": "alpha", "fingerprint": "3a16bf0e3eed55ba"}
+{"input": "beta", "fingerprint": "c40eafbcd5dabf0d"}
+{"input": "gamma", "fingerprint": "36173bd825d70d1e"}
+{"input": "delta", "fingerprint": "1dc222a5a3fa0a10"}
+{"input": "epsilon", "fingerprint": "0f7806ad9b151872"}
+{"input": "omega", "fingerprint": "4c56e2221fa3420e"}
+{"input": "kappa", "fingerprint": "adaf8a2f30043129"}
+{"input": "sigma", "fingerprint": "8fef8949058c3300"}
+{"input": "theta", "fingerprint": "eadddbd65c19d3a5"}
+{"input": "lambda", "fingerprint": "b72fa35e9902a553"}
+{"input": "mu", "fingerprint": "1c567012a551c787"}
+{"input": "nu", "fingerprint": "9296f360db2193e2"}
+{"input": "xi", "fingerprint": "456168c3a03f24e0"}
+{"input": "pi", "fingerprint": "2f61cff776c09078"}
+{"input": "rho", "fingerprint": "958b32a6cfde91fb"}
+{"input": "tau", "fingerprint": "8035af4cb06709ae"}
+{"input": "upsilon", "fingerprint": "338fb48ffc20d2a2"}
+{"input": "phi", "fingerprint": "047e89437024dd6b"}
