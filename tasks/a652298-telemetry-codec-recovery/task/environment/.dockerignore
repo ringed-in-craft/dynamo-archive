@@ -1,0 +1,7 @@
+.git
+__pycache__
+*.pyc
+.DS_Store
+*.o
+*.c
+build_vectors.py

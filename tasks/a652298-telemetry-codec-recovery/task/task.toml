@@ -1,0 +1,44 @@
+artifacts = ["/app/output/solution.py"]
+
+[task]
+name = "dynamo/telemetry-codec-recovery"
+description = "Reconstruct a lost length-dependent telemetry compression codec from archived I/O frame pairs"
+
+[metadata]
+category = "Security"
+subcategory = "Reverse Engineering"
+model_tested = "Opus-4.8"
+agent_tested = "Terminus-2"
+task_objective = ["implement", "analyze"]
+artifact_type = ["single_script_or_program"]
+expert_time_estimate_hours = 4
+difficulty_explanation = """The agent must reconstruct a lost telemetry compression codec from 12 archived input/output frame pairs. The codec is length-dependent: frames of 16 bytes or fewer use a simple XOR-based transform with a rotating state; frames longer than 16 bytes use a full 128-bit stream cipher with custom non-linear mixing, state rotation, and input feedback. No source code, documentation, or binary exists — only the frame pairs.
+
+The sample set deliberately includes both short frames (4, 8, 10, 12, 14, 16 bytes) and long frames (17, 20, 32, 48, 64, 128 bytes) so the length dependency is discoverable. However, the exact threshold (≤16 vs >16) and the algorithmic details of each transform must be inferred from the data alone. The short transform uses a simple XOR keystream with a fixed seed and an additive state update; the long transform uses a 128-bit state initialized from two 64-bit keys via a mixing function, a per-word step combining xorshift and rotation operations with an additive constant, and CFB-style input feedback where each plaintext word is XORed into the state after generating the keystream. The tail handling pads partial final words with zeros before the final step.
+
+This is genuine cryptographic reverse-engineering — the kind of work done in malware analysis, legacy system migration, and forensic codec recovery. The algorithm is a custom design not matching any published cipher. Data is author-generated synthetic telemetry frames. A senior reverse engineer would need 3-4 focused hours to isolate the threshold, reconstruct both transforms, and verify correctness."""
+solution_explanation = """The solution writes /app/output/solution.py exposing `transform(data: bytes) -> bytes`.
+
+The algorithm has two paths separated by a length threshold at 16 bytes:
+
+Short path (len ≤ 16): XOR each byte with the low byte of a 32-bit state initialized to 0xDEADBEEF. After each byte, update state via left-rotate-7 and add 0x9E3779B9. The short transform can be inferred from the 6 short samples: empty input reveals no output, single-byte inputs map the XOR relationship, and multi-byte inputs confirm the state update.
+
+Long path (len > 16): Initialize a 128-bit state from two 64-bit keys (0x9E3779B97F4A7C15 and 0xBB67AE8584CAA73B) via a mixing function (XOR right-33, multiply by large odd constant, XOR right-33). Process 4-byte words: apply xorshift (shl 9, shr 14) to s[0], rotate state right (s[0]→s[1]→s[2]→s[3]), apply xorshift (shr 6) to s[3], combine with t, add 0x9E3779B9 to produce keystream word, XOR keystream with input to produce output, then XOR input word into state for feedback. Tail bytes (1-3 remaining) pad with zeros to a full word, run one final step, XOR only the needed bytes.
+
+The key insight is that the length threshold (exactly 16 bytes) and both transforms must be reconstructed from the I/O pairs. The short samples provide a simple cipher to reverse first; the long samples reveal a qualitatively different transform requiring the full state machine."""
+verification_explanation = """The verifier removes any reference binary from the filesystem, imports the agent's solution.py, and runs transform() against 22 held-out test vectors stored in tests/expected/golden.json. The held-out vectors cover: all lengths at and around the threshold (0-5, 11, 13, 15, 18, 19, 21, 31, 33, 50 bytes), byte-value stress (all zeros, all 0xFF, alternating 0x00/0xFF at both sides of the threshold), binary range, and large inputs (1 KB, 4 KB). Output is compared byte-exact against precomputed expected values. Any deviation fails. There is no partial credit."""
+
+[verifier]
+timeout_sec = 180.0
+
+[agent]
+timeout_sec = 2400.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
